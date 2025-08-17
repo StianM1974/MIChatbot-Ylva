@@ -85,12 +85,27 @@ KONSISTENS MED VARIASJON:
       ai?.output_text ||
       "Beklager, jeg klarte ikke å svare nå.";
 
-    // 👇 Lagre hele samtalen + svar til Vercel Blob
-    await put(
-      `logs/${conversationId}.json`,
-      JSON.stringify({ conversation, reply, conversationId, chatbotVersion, timestamp: new Date().toISOString() }, null, 2),
-      { access: "public" }
-    );
+  // 👇 Lagre hele samtalen + svar til Vercel Blob
+const now = new Date();
+const dateStr = now.toISOString().slice(0,10); // YYYY-MM-DD
+const logKey = `logs/${dateStr}/${conversationId}.json`;
+
+await put(
+  logKey,
+  JSON.stringify({
+    conversation,
+    reply,
+    conversationId,
+    chatbotVersion,
+    timestamp: now.toISOString()
+  }, null, 2),
+  {
+    access: "private",
+    contentType: "application/json",
+    addRandomSuffix: false,
+    token: process.env.BLOB_READ_WRITE_TOKEN
+  }
+);
 
     // Returner både reply og metadata
     return res.status(200).json({
