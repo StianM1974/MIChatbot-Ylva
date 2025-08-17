@@ -1,65 +1,176 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MI-chatbot – Ylva</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-    #chat { border: 1px solid #ccc; padding: 20px; height: 60vh; overflow-y: auto; background-color: #f9f9f9; margin-bottom: 10px; }
-    .user { color: blue; margin: 10px 0; }
-    .bot { color: green; margin: 10px 0; }
-    #feedback { margin-top: 20px; padding: 10px; border: 1px solid #ddd; background: #fafafa; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    #chat {
+      border: 1px solid #ccc;
+      padding: 20px;
+      padding-bottom: 100px;
+      height: calc(100vh - 450px);
+      overflow-y: auto;
+      background-color: #f9f9f9;
+      margin-bottom: 10px;
+    }
+    .user {
+      color: blue;
+      margin: 10px 0;
+    }
+    .bot {
+      color: green;
+      margin: 10px 0;
+    }
+    #avatar {
+      float: left;
+      margin-right: 15px;
+      border-radius: 50%;
+      width: 80px;
+      height: 80px;
+    }
+    #instructions {
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    #inputContainer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      margin: 0 auto;
+      width: 100%;
+      max-width: 800px;
+      background: white;
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
+      z-index: 100;
+    }
+    #userInput {
+      flex: 1;
+      padding: 10px;
+      min-width: 200px;
+      margin-right: 5px;
+    }
+    button {
+      padding: 10px;
+      margin: 5px;
+    }
   </style>
 </head>
 <body>
-  <h1>MI-chatbot – Ylva</h1>
+  <h1>MI-chatbot – Case: Ylva</h1>
+  <div id="instructions">
+    <img id="avatar" src="https://placehold.co/80x80" alt="Ylva avatar">
+    <p><strong>Ylva (17)</strong> har falt ut av videregående. Hun har snudd døgnet, trekker seg unna sosialt og kjenner på skam, men har fortsatt ambisjoner og ideer om fremtiden.</p>
+    <p><strong>Mål:</strong> Bygg relasjon og utforsk både bekymringer, interesser, ambivalens og små mulige steg fremover. Ikke press.</p>
+    <p><strong>MI-kurs:</strong> Arbeidspsykolog Stian Midtgård arrangerer MI-kurs hvor du vil møte Ylva og andre AI-bots.<br>
+    <a href="https://www.arbeidspsykolog.no/webinar/" target="_blank">Les mer og meld deg på</a><br>
+    <a href="https://mailchi.mp/arbeidspsykolog.no/f-oppdateringer-om-mi-bots-og-kurs" target="_blank">Registrer deg for nye AI-bots og nyheter</a></p>
+    <p style="font-size: 0.9em;">Dette er en Beta-versjon – send gjerne kopi av samtalen om dere oppdager "bugs" til <a href="mailto:stian@arbeidspsykolog.no">stian@arbeidspsykolog.no</a></p>
+  </div>
+
   <div id="chat"></div>
-  <textarea id="input" rows="3" style="width:100%;" placeholder="Skriv her..."></textarea>
-  <button id="send">Send</button>
-  <button id="getFeedback">Hent tilbakemelding</button>
-  <div id="feedback"></div>
+
+  <div id="inputContainer">
+    <input type="text" id="userInput" placeholder="Skriv noe til Ylva...">
+    <button onclick="sendMessage()">Send</button>
+    <button onclick="getFeedback()">Få evaluering (tar noen sekunder)</button>
+  </div>
 
   <script>
-    const chatBox = document.getElementById("chat");
-    const input = document.getElementById("input");
-    const feedbackBox = document.getElementById("feedback");
+    const chat = document.getElementById("chat");
+    const userInput = document.getElementById("userInput");
+    const feedbackButton = document.querySelector("#inputContainer button:last-of-type");
     let conversation = [];
 
-    function addMessage(role, text) {
-      const div = document.createElement("div");
-      div.className = role;
-      div.textContent = (role === "user" ? "Du: " : "Ylva: ") + text;
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
+    userInput.addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
+    async function sendMessage() {
+      const userText = userInput.value;
+      if (!userText) return;
+      appendMessage("Du", userText, "user");
+      conversation.push({ role: "user", content: userText });
+      userInput.value = "";
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ conversation })
+        });
+
+        const data = await response.json();
+        appendMessage("Ylva", data.reply, "bot");
+        conversation.push({ role: "assistant", content: data.reply });
+      } catch (error) {
+        appendMessage("System", "En feil oppstod i samtalen.", "bot");
+        console.error("Feil fra API:", error);
+      }
     }
 
-    document.getElementById("send").onclick = async () => {
-      const text = input.value.trim();
-      if (!text) return;
-      addMessage("user", text);
-      conversation.push({ role: "user", content: text });
-      input.value = "";
+    async function getFeedback() {
+      const originalText = feedbackButton.innerText;
+      feedbackButton.innerText = "Vurderer samtalen …";
+      feedbackButton.disabled = true;
 
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversation })
+      try {
+        const response = await fetch("/api/feedback", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ conversation: conversation })
+        });
+
+        const data = await response.json();
+        appendMessage("Ylva (tilbakemelding)", data.reply, "bot");
+      } catch (error) {
+        appendMessage("System", "En feil oppstod under tilbakemeldingen.", "bot");
+        console.error("Feil fra API:", error);
+      } finally {
+        feedbackButton.innerText = originalText;
+        feedbackButton.disabled = false;
+      }
+    }
+
+    function appendMessage(sender, text, cssClass) {
+      const message = document.createElement("div");
+      message.className = cssClass;
+      message.innerHTML = `<strong>${sender}:</strong> ${text}`;
+      chat.appendChild(message);
+      requestAnimationFrame(() => {
+        chat.scrollTop = chat.scrollHeight;
       });
-      const data = await res.json();
-      addMessage("bot", data.reply);
-      conversation.push({ role: "assistant", content: data.reply });
+    }
+
+    const resizeChat = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+      const chatBox = document.getElementById("chat");
+      chatBox.style.height = `calc(var(--vh, 1vh) * 100 - 450px)`;
     };
 
-    document.getElementById("getFeedback").onclick = async () => {
-      const res = await fetch("/api/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversation })
-      });
-      const data = await res.json();
-      feedbackBox.textContent = "Tilbakemelding: " + data.reply;
-    };
+    window.addEventListener("resize", resizeChat);
+    window.addEventListener("orientationchange", resizeChat);
+    window.addEventListener("load", resizeChat);
   </script>
 </body>
 </html>
