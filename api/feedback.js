@@ -36,6 +36,11 @@ Her er samtalen du skal gi tilbakemelding på:
 ${conversationText}`;
 
   try {
+    const {
+  conversation = [],
+  conversationId = `${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+  chatbotVersion = "Ylva_v1.0",
+} = req.body || {};
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -63,6 +68,14 @@ ${conversationText}`;
     res.status(200).json({ message: data.choices[0].message.content });
   } catch (error) {
     console.error("API-feil:", error);
-    res.status(500).json({ message: "En feil oppstod i tilbakemeldingen." });
+    const reply = data?.choices?.[0]?.message?.content?.trim()
+  || "Beklager, jeg klarte ikke å generere en tilbakemelding nå.";
+
+return res.status(200).json({
+  reply,
+  message: reply,
+  conversationId,
+  chatbotVersion
+});
   }
 }
