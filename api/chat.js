@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { put } from "@vercel/blob";   // 👈 NYTT
+import { put } from "@vercel/blob";   // logging
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   try {
     const {
       conversation = [],
-      conversationId = ${Date.now()}_${Math.random().toString(36).slice(2,7)},
+      conversationId = `${Date.now()}_${Math.random().toString(36).slice(2,7)}`, // <-- backticks
       chatbotVersion = "Ylva_v1.0"
     } = req.body || {};
     
@@ -70,7 +70,7 @@ KONSISTENS MED VARIASJON:
 - Du kan variere i hvilke fag du nevner, hvordan du beskriver vennskap, håndball eller familie, og hvilke følelser/nyanser du viser – slik at samtaler blir litt forskjellige, men kjernen i historien alltid er den samme.
 `;
 
-  const messages = [{ role: "system", content: systemPrompt }, ...conversation];
+    const messages = [{ role: "system", content: systemPrompt }, ...conversation];
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -85,14 +85,14 @@ KONSISTENS MED VARIASJON:
       ai?.output_text ||
       "Beklager, jeg klarte ikke å svare nå.";
 
-    // --- LOGGING ---
+    // --- LOGGING (en fil per melding) ---
     try {
       if (!process.env.BLOB_READ_WRITE_TOKEN) {
         console.warn("Logger ikke: mangler BLOB_READ_WRITE_TOKEN");
       } else {
         const now = new Date();
         const dateStr = now.toISOString().slice(0,10); // YYYY-MM-DD
-        const logKey = logs/${dateStr}/${conversationId}.json;
+        const logKey = `logs/${dateStr}/${conversationId}.json`; // <-- backticks
 
         await put(
           logKey,
@@ -112,11 +112,10 @@ KONSISTENS MED VARIASJON:
         );
       }
     } catch (logErr) {
-      console.error("Logg-feil:", logErr); // <- viktig: dette stopper ikke chatten
+      console.error("Logg-feil:", logErr);
     }
     // --- /LOGGING ---
 
-    // Returner både reply og metadata
     return res.status(200).json({
       reply,
       message: reply,
