@@ -1,3 +1,4 @@
+import { put } from "@vercel/blob";
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -75,6 +76,33 @@ ${conversationText}`;
       data?.choices?.[0]?.message?.content?.trim() ||
       "Beklager, jeg klarte ikke å generere en tilbakemelding nå.";
 
+    // --- LOGGING (feedback) ---
+try {
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0,10); // YYYY-MM-DD
+  const logKey = `logs/${dateStr}/${conversationId}_feedback.json`;
+
+  await put(
+    logKey,
+    JSON.stringify({
+      conversation,           // hele samtalen som ble vurdert
+      feedback: reply,        // selve feedback-teksten
+      conversationId,
+      chatbotVersion,
+      timestamp: now.toISOString()
+    }, null, 2),
+    {
+      access: "private",
+      contentType: "application/json",
+      addRandomSuffix: false,
+      token: process.env.BLOB_READ_WRITE_TOKEN
+    }
+  );
+} catch (e) {
+  console.error("Logg-feil (feedback):", e);
+}
+// --- /LOGGING ---
+    
     // ✅ Returner svar + metadata (for logging senere)
     return res.status(200).json({
       reply,
