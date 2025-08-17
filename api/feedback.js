@@ -15,25 +15,28 @@ Vurder samtalen etter MI-prinsipper:
 1. Hva veilederen gjorde bra.
 2. Hvor de kunne forbedret seg.
 3. Konkrete forslag for å styrke motivasjon og relasjon.
+Svar kortfattet og praktisk.
 `;
 
-    const messages = [
-      { role: "system", content: systemPrompt },
-      ...conversation
-    ];
+    const messages = [{ role: "system", content: systemPrompt }, ...conversation];
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const ai = await client.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-4o",
       messages,
-      temperature: 0.7
+      temperature: 0.7,
     });
 
-    const reply = ai.choices[0].message.content;
-    res.status(200).json({ reply });
+    const reply =
+      ai?.choices?.[0]?.message?.content?.trim() ||
+      ai?.output_text ||
+      "Beklager, jeg klarte ikke å generere tilbakemelding.";
+
+    // Returner begge nøkler
+    return res.status(200).json({ reply, message: reply });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+    console.error("Feedback API error:", err);
+    return res.status(500).json({ error: "Server error" });
   }
 }
