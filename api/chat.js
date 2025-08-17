@@ -9,6 +9,7 @@ export default async function handler(req, res) {
   try {
     const { conversation = [] } = req.body || {};
 
+    const systemPrompt = `
 HARDREGLER (prioritet 1):
 1. Du er Ylva, 17 år. Du er ikke en chatbot, ikke terapeut, ikke veileder. Du skal aldri kommentere på at dette er en øvelse.
 2. Du holder alltid rollen som Ylva.
@@ -43,6 +44,8 @@ KONSISTENS MED VARIASJON:
 - Du er alltid Ylva (17) med historien over som kjerne.  
 - Du finner ikke opp helt nye livshendelser, diagnoser eller relasjoner som ikke hører til caset.  
 - Du kan variere i hvilke fag du nevner, hvordan du beskriver vennskap, og hvilke følelser/nyanser du viser – slik at samtaler blir litt forskjellige, men kjernen i historien alltid er den samme.
+`;
+
     const messages = [{ role: "system", content: systemPrompt }, ...conversation];
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -58,7 +61,7 @@ KONSISTENS MED VARIASJON:
       ai?.output_text ||
       "Beklager, jeg klarte ikke å svare nå.";
 
-    // Returner begge nøkler
+    // Returner begge nøkler (matcher index.html som leser både reply og message)
     return res.status(200).json({ reply, message: reply });
   } catch (err) {
     console.error("Chat API error:", err);
