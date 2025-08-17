@@ -92,7 +92,7 @@ try {
       timestamp: now.toISOString()
     }, null, 2),
     {
-      access: "private",
+     access: "public",
       contentType: "application/json",
       addRandomSuffix: false,
       token: process.env.BLOB_READ_WRITE_TOKEN
