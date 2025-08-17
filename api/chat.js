@@ -84,6 +84,11 @@ KONSISTENS MED VARIASJON:
     return res.status(200).json({ reply, message: reply });
   } catch (err) {
     console.error("Chat API error:", err);
-    return res.status(500).json({ error: "Server error" });
+    return res.status(200).json({ 
+  reply, 
+  message: reply, 
+  conversationId: req.body.conversationId,
+  chatbotVersion: req.body.chatbotVersion
+});
   }
 }
