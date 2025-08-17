@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { put, get } from "@vercel/blob";   // 👈 trenger også get nå
+import { put } from "@vercel/blob";   // 👈 NYTT
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   try {
     const {
       conversation = [],
-      conversationId = `${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+      conversationId = ${Date.now()}_${Math.random().toString(36).slice(2,7)},
       chatbotVersion = "Ylva_v1.0"
     } = req.body || {};
     
@@ -70,7 +70,7 @@ KONSISTENS MED VARIASJON:
 - Du kan variere i hvilke fag du nevner, hvordan du beskriver vennskap, håndball eller familie, og hvilke følelser/nyanser du viser – slik at samtaler blir litt forskjellige, men kjernen i historien alltid er den samme.
 `;
 
-    const messages = [{ role: "system", content: systemPrompt }, ...conversation];
+  const messages = [{ role: "system", content: systemPrompt }, ...conversation];
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -91,36 +91,18 @@ KONSISTENS MED VARIASJON:
         console.warn("Logger ikke: mangler BLOB_READ_WRITE_TOKEN");
       } else {
         const now = new Date();
-        const dateStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
-        const logKey = `logs/${dateStr}/${conversationId}.json`;
+        const dateStr = now.toISOString().slice(0,10); // YYYY-MM-DD
+        const logKey = logs/${dateStr}/${conversationId}.json;
 
-        // 1. Hent eksisterende logg (dersom den finnes)
-        let existingLog = [];
-        try {
-          const existing = await get(logKey, { token: process.env.BLOB_READ_WRITE_TOKEN });
-          if (existing?.url) {
-            const resp = await fetch(existing.url);
-            if (resp.ok) {
-              existingLog = await resp.json();
-            }
-          }
-        } catch (e) {
-          // ingen eksisterende logg – helt greit
-        }
-
-        // 2. Legg til ny runde
-        existingLog.push({
-          conversation,
-          reply,
-          conversationId,
-          chatbotVersion,
-          timestamp: now.toISOString()
-        });
-
-        // 3. Lagre oppdatert logg
         await put(
           logKey,
-          JSON.stringify(existingLog, null, 2),
+          JSON.stringify({
+            conversation,
+            reply,
+            conversationId,
+            chatbotVersion,
+            timestamp: now.toISOString()
+          }, null, 2),
           {
             access: "public",
             contentType: "application/json",
@@ -130,10 +112,11 @@ KONSISTENS MED VARIASJON:
         );
       }
     } catch (logErr) {
-      console.error("Logg-feil:", logErr);
+      console.error("Logg-feil:", logErr); // <- viktig: dette stopper ikke chatten
     }
     // --- /LOGGING ---
 
+    // Returner både reply og metadata
     return res.status(200).json({
       reply,
       message: reply,
