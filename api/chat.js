@@ -70,7 +70,7 @@ KONSISTENS MED VARIASJON:
 - Du kan variere i hvilke fag du nevner, hvordan du beskriver vennskap, håndball eller familie, og hvilke følelser/nyanser du viser – slik at samtaler blir litt forskjellige, men kjernen i historien alltid er den samme.
 `;
 
-    const messages = [{ role: "system", content: systemPrompt }, ...conversation];
+   const messages = [{ role: "system", content: systemPrompt }, ...conversation];
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -85,15 +85,23 @@ KONSISTENS MED VARIASJON:
       ai?.output_text ||
       "Beklager, jeg klarte ikke å svare nå.";
 
-    // Returner begge nøkler (matcher index.html som leser både reply og message)
-    return res.status(200).json({ reply, message: reply });
+    // 👇 Lagre hele samtalen + svar til Vercel Blob
+    await put(
+      `logs/${conversationId}.json`,
+      JSON.stringify({ conversation, reply, conversationId, chatbotVersion, timestamp: new Date().toISOString() }, null, 2),
+      { access: "public" }
+    );
+
+    // Returner både reply og metadata
+    return res.status(200).json({
+      reply,
+      message: reply,
+      conversationId,
+      chatbotVersion
+    });
+
   } catch (err) {
     console.error("Chat API error:", err);
-    return res.status(200).json({ 
-  reply, 
-  message: reply, 
-  conversationId: req.body.conversationId,
-  chatbotVersion: req.body.chatbotVersion
-});
+    return res.status(500).json({ error: "Server error" });
   }
 }
