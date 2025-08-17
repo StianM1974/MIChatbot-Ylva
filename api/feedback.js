@@ -1,14 +1,25 @@
 export default async function handler(req, res) {
-  const { conversation } = req.body;
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ message: "Method not allowed" });
+  }
+
+  // Hent metadata som frontenden sender (for logging senere)
+  const {
+    conversation = [],
+    conversationId = `${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+    chatbotVersion = "Ylva_v1.0",
+  } = req.body || {};
 
   if (!conversation || !Array.isArray(conversation) || conversation.length < 2) {
     return res.status(400).json({ message: "Samtalen er for kort til å gi tilbakemelding." });
   }
 
   const conversationText = conversation
-    .map(msg => msg.role === "user" ? `Veileder: ${msg.content}` : `Ylva: ${msg.content}`)
+    .map(msg => (msg.role === "user" ? `Veileder: ${msg.content}` : `Ylva: ${msg.content}`))
     .join("\n");
 
+  // ⬇️ UFORANDRET SYSTEMPROMPT (din tekst)
   const systemPrompt = `Du er Ylva, en 17 år gammel jente. Du har nettopp hatt en samtale med en veileder.
 
 Nå skal du gi en tilbakemelding på hvordan du opplevde samtalen. Du er ærlig, reflektert og svarer i et metaperspektiv – altså hvordan samtalen påvirket deg. Du er fortsatt deg selv, Ylva, men nå forklarer du hvordan du reagerte, hva som fungerte, og hva som kunne vært bedre. Ikke snakk som en ungdom i øyeblikket, men som en som ser tilbake på samtalen med litt mer innsikt.
@@ -36,11 +47,6 @@ Her er samtalen du skal gi tilbakemelding på:
 ${conversationText}`;
 
   try {
-    const {
-  conversation = [],
-  conversationId = `${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
-  chatbotVersion = "Ylva_v1.0",
-} = req.body || {};
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -65,17 +71,20 @@ ${conversationText}`;
       return res.status(500).json({ message: "En feil oppstod i tilbakemeldingen." });
     }
 
-    res.status(200).json({ message: data.choices[0].message.content });
+    const reply =
+      data?.choices?.[0]?.message?.content?.trim() ||
+      "Beklager, jeg klarte ikke å generere en tilbakemelding nå.";
+
+    // ✅ Returner svar + metadata (for logging senere)
+    return res.status(200).json({
+      reply,
+      message: reply,
+      conversationId,
+      chatbotVersion
+    });
+
   } catch (error) {
     console.error("API-feil:", error);
-    const reply = data?.choices?.[0]?.message?.content?.trim()
-  || "Beklager, jeg klarte ikke å generere en tilbakemelding nå.";
-
-return res.status(200).json({
-  reply,
-  message: reply,
-  conversationId,
-  chatbotVersion
-});
+    return res.status(500).json({ message: "En feil oppstod i tilbakemeldingen." });
   }
 }
