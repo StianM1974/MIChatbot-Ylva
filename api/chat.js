@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { put } from "@vercel/blob";   // 👈 NYTT
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -7,7 +8,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { conversation = [] } = req.body || {};
+    const {
+      conversation = [],
+      conversationId = `${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+      chatbotVersion = "Ylva_v1.0"
+    } = req.body || {};
 
     const systemPrompt = `
 HARDREGLER (prioritet 1):
