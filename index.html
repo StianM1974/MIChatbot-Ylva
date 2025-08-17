@@ -71,9 +71,9 @@
 <body>
   <h1>MI-chatbot – Case: Ylva</h1>
   <div id="instructions">
-    <img id="avatar" src="https://placehold.co/80x80" alt="Ylva avatar">
-    <p><strong>Ylva (17)</strong> har falt ut av videregående. Hun har snudd døgnet, trekker seg unna sosialt og kjenner på skam, men har fortsatt ambisjoner og ideer om fremtiden.</p>
-    <p><strong>Mål:</strong> Bygg relasjon og utforsk både bekymringer, interesser, ambivalens og små mulige steg fremover. Ikke press.</p>
+    <img id="avatar" src="https://oaidalleapiprodscus.blob.core.windows.net/private/org-3QKjRE0Kr0LOtu0cB4HWtO4Q/user-oj7qTf1aDz0ikF7t1M8iiGAM/img-2G5aW5cK4TmZC3VhW5zIlKBr.png?st=2025-08-17T12%3A00%3A00Z&se=2025-08-17T18%3A00%3A00Z&sp=r&sv=2025-02-19&sr=b&rscd=inline&rsct=image/png&skoid=6f0f3c5d-3e5e-4693-a8f6-40d11fb6885b&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-08-16T12%3A00%3A00Z&ske=2025-08-18T12%3A00%3A00Z&sks=b&skv=2025-02-19&sig=ZtJvV8O1qZg5FhTZKxjCrZ5qA87kF1ykq3j3MT6YJxY%3D" alt="Ylva avatar">
+    <p><strong>Ylva (17)</strong> falt ut av videregående etter å ha hatt kyssesyken og opplevd mye utmattelse. Hun ble hengende etter faglig og sosialt, og har mistet litt kontakten med miljøet. Hun har tidligere hatt veldig gode karakterer og er ambisiøs, men er usikker på hvordan hun skal finne balansen mellom å satse og ikke presse seg for hardt igjen.</p>
+    <p><strong>Mål:</strong> Utforsk hvordan Ylva tenker om fremtiden, hennes ambisjoner, bekymringer og ideer for å komme tilbake til skolen. Bygg relasjon og støtt refleksjon uten å presse.</p>
     <p><strong>MI-kurs:</strong> Arbeidspsykolog Stian Midtgård arrangerer MI-kurs hvor du vil møte Ylva og andre AI-bots.<br>
     <a href="https://www.arbeidspsykolog.no/webinar/" target="_blank">Les mer og meld deg på</a><br>
     <a href="https://mailchi.mp/arbeidspsykolog.no/f-oppdateringer-om-mi-bots-og-kurs" target="_blank">Registrer deg for nye AI-bots og nyheter</a></p>
@@ -85,7 +85,7 @@
   <div id="inputContainer">
     <input type="text" id="userInput" placeholder="Skriv noe til Ylva...">
     <button onclick="sendMessage()">Send</button>
-    <button onclick="getFeedback()">Få evaluering (tar noen sekunder)</button>
+    <button onclick="getFeedback()">Få evaluering (tar 5 sek)</button>
   </div>
 
   <script>
@@ -96,7 +96,6 @@
 
     userInput.addEventListener("keypress", function(event) {
       if (event.key === "Enter") {
-        event.preventDefault();
         sendMessage();
       }
     });
@@ -118,8 +117,8 @@
         });
 
         const data = await response.json();
-        appendMessage("Ylva", data.reply, "bot");
-        conversation.push({ role: "assistant", content: data.reply });
+        appendMessage("Ylva", data.message, "bot");
+        conversation.push({ role: "assistant", content: data.message });
       } catch (error) {
         appendMessage("System", "En feil oppstod i samtalen.", "bot");
         console.error("Feil fra API:", error);
@@ -141,7 +140,7 @@
         });
 
         const data = await response.json();
-        appendMessage("Ylva (tilbakemelding)", data.reply, "bot");
+        appendMessage("Ylva (tilbakemelding)", data.message, "bot");
       } catch (error) {
         appendMessage("System", "En feil oppstod under tilbakemeldingen.", "bot");
         console.error("Feil fra API:", error);
