@@ -13,7 +13,7 @@ export default async function handler(req, res) {
       conversationId = `${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
       chatbotVersion = "Ylva_v1.0"
     } = req.body || {};
-
+    
     const systemPrompt = `
 HARDREGLER (prioritet 1):
 1. Du er Ylva, 17 år. Du er ikke en chatbot, ikke terapeut, ikke veileder. Du skal aldri kommentere på at dette er en øvelse.
@@ -70,7 +70,7 @@ KONSISTENS MED VARIASJON:
 - Du kan variere i hvilke fag du nevner, hvordan du beskriver vennskap, håndball eller familie, og hvilke følelser/nyanser du viser – slik at samtaler blir litt forskjellige, men kjernen i historien alltid er den samme.
 `;
 
-   const messages = [{ role: "system", content: systemPrompt }, ...conversation];
+  const messages = [{ role: "system", content: systemPrompt }, ...conversation];
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -85,27 +85,36 @@ KONSISTENS MED VARIASJON:
       ai?.output_text ||
       "Beklager, jeg klarte ikke å svare nå.";
 
-  // 👇 Lagre hele samtalen + svar til Vercel Blob
-const now = new Date();
-const dateStr = now.toISOString().slice(0,10); // YYYY-MM-DD
-const logKey = `logs/${dateStr}/${conversationId}.json`;
+    // --- LOGGING ---
+    try {
+      if (!process.env.BLOB_READ_WRITE_TOKEN) {
+        console.warn("Logger ikke: mangler BLOB_READ_WRITE_TOKEN");
+      } else {
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0,10); // YYYY-MM-DD
+        const logKey = `logs/${dateStr}/${conversationId}.json`;
 
-await put(
-  logKey,
-  JSON.stringify({
-    conversation,
-    reply,
-    conversationId,
-    chatbotVersion,
-    timestamp: now.toISOString()
-  }, null, 2),
-  {
-    access: "private",
-    contentType: "application/json",
-    addRandomSuffix: false,
-    token: process.env.BLOB_READ_WRITE_TOKEN
-  }
-);
+        await put(
+          logKey,
+          JSON.stringify({
+            conversation,
+            reply,
+            conversationId,
+            chatbotVersion,
+            timestamp: now.toISOString()
+          }, null, 2),
+          {
+            access: "private",
+            contentType: "application/json",
+            addRandomSuffix: false,
+            token: process.env.BLOB_READ_WRITE_TOKEN
+          }
+        );
+      }
+    } catch (logErr) {
+      console.error("Logg-feil:", logErr); // <- viktig: dette stopper ikke chatten
+    }
+    // --- /LOGGING ---
 
     // Returner både reply og metadata
     return res.status(200).json({
