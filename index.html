@@ -204,61 +204,50 @@
     const conversationId = `${new Date().toISOString().replace(/[:.]/g, "-")}_${Math.random().toString(36).slice(2,7)}`;
     const chatbotVersion = "Ylva_v1.0";
 
-    // ===== iOS / mobil visuell viewport-fiks (keyboard-aware) =====
+    /* ========= 1) Keyboard-aware layout: input alltid over tastatur ========= */
     function applyViewportSizing() {
       const vv = window.visualViewport;
-      const totalH = window.innerHeight;
+      const winH = window.innerHeight;
 
-      // estimér tastatur-høyde (kb)
-      const kb = vv ? Math.max(0, totalH - (vv.height + vv.offsetTop)) : 0;
+      // Estimer tastatur-høyde
+      const keyboard = vv ? Math.max(0, winH - (vv.height + vv.offsetTop)) : 0;
 
-      // løft input-baren over tastaturet
-      inputBar.style.transform = kb > 0 ? `translateY(-${kb}px)` : 'translateY(0)';
+      // Løft inputbaren eksakt like mye som tastaturet
+      inputBar.style.transform = keyboard > 0 ? `translateY(-${keyboard}px)` : 'translateY(0)';
 
-      // gi chat nok bunn-padding til både inputBar og tastatur
-      const padBottom = inputBar.offsetHeight + kb + 20;
-      chat.style.paddingBottom = padBottom + 'px';
+      // Synlig høyde (ekskl tastatur)
+      const visibleH = vv ? vv.height : winH;
 
-      // beregn chat-høyde basert på synlig del av vinduet
-      const visibleH = vv ? vv.height : totalH;
-      const approxHeader = 450; // som før
-      const chatH = Math.max(160, (visibleH - inputBar.offsetHeight - (approxHeader - 100)));
-      chat.style.height = chatH + 'px';
+      // Chat-høyde slutter rett over inputbaren
+      const chatHeight = Math.max(160, visibleH - inputBar.offsetHeight - 16);
+      chat.style.height = chatHeight + 'px';
+
+      // Litt bunn-padding så siste linje ikke klemmes
+      chat.style.paddingBottom = (inputBar.offsetHeight + keyboard + 8) + 'px';
     }
 
-    // HJELPER: hold input synlig etter DOM-endringer/fokus
-    function ensureInputVisible() {
+    /* ========= 2) Smart autoscroll: vis siste melding over input ========= */
+    function smartScroll(force = false) {
       applyViewportSizing();
-      requestAnimationFrame(() => {
+      const nearBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 120;
+      if (force || nearBottom) {
         chat.scrollTop = chat.scrollHeight;
-        inputBar.scrollIntoView({ block: 'end', behavior: 'auto' });
-        // iOS kan kreve et lite “nudge”:
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' });
-      });
+      }
     }
 
-    // reager på tastatur-åpning/lukking og orientering
-    window.visualViewport?.addEventListener('resize', applyViewportSizing);
-    window.visualViewport?.addEventListener('scroll', applyViewportSizing);
-    window.addEventListener('orientationchange', applyViewportSizing);
-    window.addEventListener('load', applyViewportSizing);
-    window.addEventListener('resize', applyViewportSizing);
+    // Reager på tastatur/viewport-endringer
+    window.visualViewport?.addEventListener('resize', () => smartScroll(false));
+    window.visualViewport?.addEventListener('scroll', () => smartScroll(false));
+    window.addEventListener('orientationchange', () => smartScroll(false));
+    window.addEventListener('load', () => smartScroll(true));
+    window.addEventListener('resize', () => smartScroll(false));
 
-    // sørg for at felt + siste melding er synlig når man fokuserer inputen
+    // Hold input + siste melding synlige ved fokus
     userInput.addEventListener('focus', () => {
-      setTimeout(() => {
-        ensureInputVisible();
-      }, 50);
+      setTimeout(() => smartScroll(false), 50);
     });
 
-    // OBSERVER: når chat får nye meldinger (DOM endres), hold input synlig
-    const chatObserver = new MutationObserver(() => {
-      // gi layout et øyeblikk til å reflowe før vi justerer
-      setTimeout(ensureInputVisible, 0);
-    });
-    chatObserver.observe(chat, { childList: true });
-
-    // ===== chat-flyt =====
+    /* ========= 3) Chat-flyt ========= */
     userInput.addEventListener("keypress", function(event) {
       if (event.key === "Enter") sendMessage();
     });
@@ -285,7 +274,7 @@
         appendMessage("System", "En feil oppstod i samtalen.", "bot");
         console.error("Feil fra API:", error);
       } finally {
-        ensureInputVisible();
+        smartScroll(true);
       }
     }
 
@@ -310,7 +299,7 @@
       } finally {
         feedbackButton.innerText = originalText;
         feedbackButton.disabled = false;
-        ensureInputVisible();
+        smartScroll(true);
       }
     }
 
@@ -319,10 +308,10 @@
       message.className = cssClass;
       message.innerHTML = `<strong>${sender}:</strong> ${text}`;
       chat.appendChild(message);
-      // NB: MutationObserver kaller ensureInputVisible() etter DOM-append
+      smartScroll(true); // vis alltid siste meldingen rett over input
     }
 
-    // --- Mikrofon-ikon: Web Speech API (Chrome/Edge/Android) + iOS-hint ---
+    /* ========= 4) Mikrofon-ikon: Web Speech API (Chrome/Edge/Android) + iOS-hint ========= */
     (function setupVoiceUI() {
       const micBtn = document.getElementById("micBtn");
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -399,7 +388,7 @@
     })();
 
     // initial layout
-    applyViewportSizing();
+    smartScroll(true);
   </script>
 </body>
 </html>
