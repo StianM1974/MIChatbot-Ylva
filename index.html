@@ -377,6 +377,17 @@
 
     // initial layout
     applyViewportSizing();
+    // 3) Fallback: ingen støtte
+      micBtn.style.display = "inline-flex";
+      micBtn.addEventListener("click", () => {
+        alert("Nettleseren støtter ikke diktering. Bruk Chrome eller Safari sitt tastatur.");
+      });
+    })();
+
+    // initial layout
+    applyViewportSizing();
+  </script>
+</body>
   </script>
 </body>
 </html>
