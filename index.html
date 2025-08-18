@@ -49,7 +49,7 @@
       box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
       z-index: 100;
       box-sizing: border-box;
-      will-change: transform;      /* glattere animasjon når tastatur åpnes */
+      /* IKKE transform her (skaper jump på iOS) */
     }
 
     /* Øverste rad (mobil): input + send */
@@ -207,35 +207,30 @@
     /* ========= 1) Keyboard-aware layout: input alltid over tastatur ========= */
     function applyViewportSizing() {
       const vv = window.visualViewport;
-      const winH = window.innerHeight;
+      const visibleH = vv ? vv.height : window.innerHeight;
 
-      // Estimer tastatur-høyde
-      const keyboard = vv ? Math.max(0, winH - (vv.height + vv.offsetTop)) : 0;
+      // Faktisk høyde på input-baren (som vises)
+      const inputH = inputBar.getBoundingClientRect().height;
 
-      // Løft inputbaren eksakt like mye som tastaturet
-      inputBar.style.transform = keyboard > 0 ? `translateY(-${keyboard}px)` : 'translateY(0)';
+      // Gi chat nok plass nederst til inputbaren + litt luft
+      chat.style.paddingBottom = (inputH + 12) + 'px';
 
-      // Synlig høyde (ekskl tastatur)
-      const visibleH = vv ? vv.height : winH;
-
-      // Chat-høyde slutter rett over inputbaren
-      const chatHeight = Math.max(160, visibleH - inputBar.offsetHeight - 16);
-      chat.style.height = chatHeight + 'px';
-
-      // Litt bunn-padding så siste linje ikke klemmes
-      chat.style.paddingBottom = (inputBar.offsetHeight + keyboard + 8) + 'px';
+      // Sett chat-høyde til synlig viewport minus inputbaren
+      const minH = 160;
+      const chatH = Math.max(minH, visibleH - inputH - 16);
+      chat.style.height = chatH + 'px';
     }
 
     /* ========= 2) Smart autoscroll: vis siste melding over input ========= */
     function smartScroll(force = false) {
       applyViewportSizing();
-      const nearBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 120;
+      const nearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 120;
       if (force || nearBottom) {
         chat.scrollTop = chat.scrollHeight;
       }
     }
 
-    // Reager på tastatur/viewport-endringer
+    // Reager på tastatur/viewport-endringer (iOS/Android)
     window.visualViewport?.addEventListener('resize', () => smartScroll(false));
     window.visualViewport?.addEventListener('scroll', () => smartScroll(false));
     window.addEventListener('orientationchange', () => smartScroll(false));
@@ -244,7 +239,7 @@
 
     // Hold input + siste melding synlige ved fokus
     userInput.addEventListener('focus', () => {
-      setTimeout(() => smartScroll(false), 50);
+      setTimeout(() => smartScroll(true), 50);
     });
 
     /* ========= 3) Chat-flyt ========= */
