@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta charset="UTF-8">
   <title>MI-chatbot – Ylva</title>
   <style>
@@ -14,7 +14,7 @@
     #chat {
       border: 1px solid #ccc;
       padding: 20px;
-      /* denne padding-bottomen blir oppdatert i JS basert på høyden til inputContainer */
+      /* oppdateres i JS basert på høyden til inputContainer */
       padding-bottom: 100px;
       height: calc(100vh - 450px);
       overflow-y: auto;
@@ -41,7 +41,6 @@
       margin: 0 auto;
       width: 100%; max-width: 800px;
       background: white;
-      /* litt ekstra bunn-padding for iPhone (safe area) */
       padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
       display: flex; align-items: center; gap: 8px;
       flex-wrap: nowrap;
@@ -57,10 +56,11 @@
     }
     #userInput {
       width: 100%;
-      padding: 12px 38px 12px 12px; /* plass til mic */
+      padding: 14px 42px 14px 14px;   /* litt mer plass + mic-ikon */
       box-sizing: border-box;
-      font-size: 16px;
-      min-height: 42px;              /* litt større på mobil */
+      font-size: 17px;                /* iOS-vennlig, hindrer uønsket zoom */
+      min-height: 50px;               /* større trykkflate på mobil */
+      line-height: 1.25;
     }
 
     button {
@@ -81,7 +81,7 @@
     }
     #micBtn:active{ transform: translateY(-50%) scale(0.95); }
 
-    /* når skjermen er veldig smal, kort ned placeholderen for å holde plass */
+    /* veldig smale skjermer: ikke kutt knapper, la input få mest plass */
     @media (max-width: 420px){
       #userInput::placeholder { content: "Skriv…"; }
     }
@@ -130,10 +130,9 @@
       // reserver plass til inputBar i bunnen av chat
       chat.style.paddingBottom = (inputBar.offsetHeight + 20) + 'px';
 
-      // dynamisk høyde for chat som ikke havner under tastaturet
-      const topParts = document.body.clientHeight - document.documentElement.clientHeight; // vanligvis 0
-      const approxHeader = 450; // samme som i CSS-beregningen
-      const h = Math.max(160, (height - inputBar.offsetHeight - (approxHeader - 100))); 
+      // mer rom for chat når tastaturet er oppe
+      const headerAllowance = 320; // gjør chat-boksen høyere enn før
+      const h = Math.max(200, height - inputBar.offsetHeight - headerAllowance);
       chat.style.height = h + 'px';
     }
     window.visualViewport?.addEventListener('resize', applyViewportSizing);
@@ -186,7 +185,7 @@
       feedbackButton.innerText = "Vurderer …";
       feedbackButton.disabled = true;
 
-      try {
+    try {
         const response = await fetch("/api/feedback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
