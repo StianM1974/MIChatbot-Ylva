@@ -56,22 +56,41 @@
       box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
       z-index: 100;
     }
-    #userInput {
+    /* input med mikrofon-ikon */
+    .inputWrap {
+      position: relative;
       flex: 1;
-      padding: 10px;
       min-width: 200px;
       margin-right: 5px;
+    }
+    #userInput {
+      width: 100%;
+      padding: 10px 38px 10px 10px; /* plass til mic-ikonet */
     }
     button {
       padding: 10px;
       margin: 5px;
     }
+    #micBtn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 4px;
+      display: none; /* vises via JS der det støttes */
+    }
+    #micBtn:active { transform: translateY(-50%) scale(0.95); }
   </style>
 </head>
 <body>
   <h1>MI-chatbot – Case: Ylva</h1>
   <div id="instructions">
-   <img id="avatar" src="/ylva.png" alt="Ylva avatar">
+    <img id="avatar" src="/ylva.png" alt="Ylva avatar">
     <p><strong>Ylva (17)</strong> falt ut av videregående etter å ha hatt kyssesyken. Hun ble hengende etter faglig og trakk seg unna sosialt, men hun har hatt gode karakterer tidligere og er motivert for å komme tilbake. Hun er usikker på hvordan hun kan finne balansen mellom ambisjoner og å ikke presse seg for hardt etter utmattelsen.</p>
     <p><strong>Mål:</strong> Bygg relasjon og utforsk både bekymringer, styrker og ideer for fremtiden. Ikke press, men hjelp henne å reflektere rundt balanse og motivasjon.</p>
     <p><strong>MI-kurs:</strong> Arbeidspsykolog Stian Midtgård arrangerer MI-kurs hvor du vil møte Ylva og andre AI-bots.<br>
@@ -82,23 +101,16 @@
 
   <div id="chat"></div>
 
+  <!-- NY input-rad med mikrofon-ikon i feltet -->
   <div id="inputContainer">
-    <input type="text" id="userInput" placeholder="Skriv noe til Ylva...">
+    <div class="inputWrap">
+      <input type="text" id="userInput" placeholder="Skriv noe til Ylva...">
+      <button id="micBtn" title="Snakk" aria-label="Snakk">🎤</button>
+    </div>
     <button onclick="sendMessage()">Send</button>
     <button onclick="getFeedback()">Få evaluering (tar 5 sek)</button>
-
-    <!-- Tale til tekst -->
-    <div id="voiceControls" style="margin-top:8px;">
-      <button id="recordBtn" style="display:none;">🎙️ Snakk</button>
-
-      <label id="uploadLabel" style="display:none; cursor:pointer;">
-        📂 Last opp lydfil
-        <input id="audioFileInput" type="file" accept="audio/*" style="display:none;">
-      </label>
-
-      <div id="iosHint" style="display:none; font-size:0.9em; opacity:.8; margin-top:4px;">
-        På iPhone/Safari: trykk mikrofon-ikonet på tastaturet for diktering.
-      </div>
+    <div id="iosHint" style="display:none; font-size:0.9em; opacity:.8; margin-left:8px;">
+      På iPhone/Safari: bruk mikrofon-ikonet på tastaturet for diktering.
     </div>
   </div>
 
@@ -186,47 +198,29 @@
     window.addEventListener("orientationchange", resizeChat);
     window.addEventListener("load", resizeChat);
 
-    // --- Tale til tekst logikk ---
-    document.addEventListener("DOMContentLoaded", () => {
-      const recordBtn = document.getElementById("recordBtn");
-      const uploadLabel = document.getElementById("uploadLabel");
-      const audioFileInput = document.getElementById("audioFileInput");
+    // --- Mikrofon-ikon: synlighet og (midlertidig) handling ---
+    (function setupVoiceUI() {
+      const micBtn = document.getElementById("micBtn");
       const iosHint = document.getElementById("iosHint");
 
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
       if (isIOS || isSafari) {
+        // iPhone/Safari: bruk tastaturets innebygde diktering
         iosHint.style.display = "block";
+        micBtn.style.display = "none";
       } else {
-        recordBtn.style.display = "inline-block";
-        uploadLabel.style.display = "inline-block";
+        // Andre: vis mikrofon-ikon (kan kobles til Whisper senere)
+        iosHint.style.display = "none";
+        micBtn.style.display = "inline-block";
       }
 
-      recordBtn.addEventListener("click", async () => {
-        alert("Opptaksfunksjon kobles til Whisper her 🚀");
+      micBtn.addEventListener("click", () => {
+        alert("Snart: taleopptak kobles til Whisper. For nå: bruk tastaturets diktering eller skriv.");
       });
-
-      audioFileInput.addEventListener("change", async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const res = await fetch("/api/transcribe", {
-          method: "POST",
-          body: formData
-        });
-
-        const data = await res.json();
-        if (data.text) {
-          document.getElementById("userInput").value = data.text;
-        } else {
-          alert("Kunne ikke transkribere lydfilen.");
-        }
-      });
-    });
+    })();
+    // --- /Mikrofon-ikon ---
   </script>
 </body>
 </html>
