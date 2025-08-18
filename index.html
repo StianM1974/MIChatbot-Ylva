@@ -14,7 +14,7 @@
     #chat {
       border: 1px solid #ccc;
       padding: 20px;
-      /* oppdateres i JS basert på høyden til inputContainer */
+      /* padding-bottom oppdateres i JS basert på inputContainer og tastatur */
       padding-bottom: 100px;
       height: calc(100vh - 450px);
       overflow-y: auto;
@@ -37,7 +37,7 @@
     /* ====== INPUTRADEN (mobil først) ====== */
     #inputContainer {
       position: fixed;
-      left: 0; right: 0; bottom: 0;
+      left: 0; right: 0; bottom: 0;           /* <-- bottom justeres i JS */
       margin: 0 auto;
       width: 100%; max-width: 800px;
       background: white;
@@ -49,7 +49,6 @@
       box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
       z-index: 100;
       box-sizing: border-box;
-      /* IKKE transform her (skaper jump på iOS) */
     }
 
     /* Øverste rad (mobil): input + send */
@@ -204,33 +203,40 @@
     const conversationId = `${new Date().toISOString().replace(/[:.]/g, "-")}_${Math.random().toString(36).slice(2,7)}`;
     const chatbotVersion = "Ylva_v1.0";
 
-    /* ========= 1) Keyboard-aware layout: input alltid over tastatur ========= */
-    function applyViewportSizing() {
+    /* ========= 1) Keyboard-aware layout (bottom-offset) ========= */
+    function getKeyboardHeight() {
       const vv = window.visualViewport;
-      const visibleH = vv ? vv.height : window.innerHeight;
+      if (!vv) return 0;
+      // Høyde tastatur ≈ full vindushøyde - (synlig viewport + offsetTop)
+      return Math.max(0, window.innerHeight - (vv.height + vv.offsetTop));
+    }
 
-      // Faktisk høyde på input-baren (som vises)
+    function applyLayout() {
+      const kb = getKeyboardHeight();
+
+      // Løft inputbaren nøyaktig over tastaturet
+      inputBar.style.bottom = kb + 'px';
+
+      // Oppdater chat padding-bottom så siste meldinger ikke havner bak input
       const inputH = inputBar.getBoundingClientRect().height;
+      chat.style.paddingBottom = (inputH + kb + 12) + 'px';
 
-      // Gi chat nok plass nederst til inputbaren + litt luft
-      chat.style.paddingBottom = (inputH + 12) + 'px';
-
-      // Sett chat-høyde til synlig viewport minus inputbaren
-      const minH = 160;
-      const chatH = Math.max(minH, visibleH - inputH - 16);
+      // Sett chat-høyde til synlig viewport-høyde minus inputbar
+      const visibleH = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+      const chatH = Math.max(160, visibleH - inputH - 16);
       chat.style.height = chatH + 'px';
     }
 
     /* ========= 2) Smart autoscroll: vis siste melding over input ========= */
     function smartScroll(force = false) {
-      applyViewportSizing();
+      applyLayout();
       const nearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 120;
       if (force || nearBottom) {
         chat.scrollTop = chat.scrollHeight;
       }
     }
 
-    // Reager på tastatur/viewport-endringer (iOS/Android)
+    // Reager på tastatur/viewport-endringer
     window.visualViewport?.addEventListener('resize', () => smartScroll(false));
     window.visualViewport?.addEventListener('scroll', () => smartScroll(false));
     window.addEventListener('orientationchange', () => smartScroll(false));
@@ -303,7 +309,7 @@
       message.className = cssClass;
       message.innerHTML = `<strong>${sender}:</strong> ${text}`;
       chat.appendChild(message);
-      smartScroll(true); // vis alltid siste meldingen rett over input
+      smartScroll(true);
     }
 
     /* ========= 4) Mikrofon-ikon: Web Speech API (Chrome/Edge/Android) + iOS-hint ========= */
