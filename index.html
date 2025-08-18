@@ -86,17 +86,30 @@
     <input type="text" id="userInput" placeholder="Skriv noe til Ylva...">
     <button onclick="sendMessage()">Send</button>
     <button onclick="getFeedback()">Få evaluering (tar 5 sek)</button>
+
+    <!-- Tale til tekst -->
+    <div id="voiceControls" style="margin-top:8px;">
+      <button id="recordBtn" style="display:none;">🎙️ Snakk</button>
+
+      <label id="uploadLabel" style="display:none; cursor:pointer;">
+        📂 Last opp lydfil
+        <input id="audioFileInput" type="file" accept="audio/*" style="display:none;">
+      </label>
+
+      <div id="iosHint" style="display:none; font-size:0.9em; opacity:.8; margin-top:4px;">
+        På iPhone/Safari: trykk mikrofon-ikonet på tastaturet for diktering.
+      </div>
+    </div>
   </div>
 
   <script>
-     
     const chat = document.getElementById("chat");
     const userInput = document.getElementById("userInput");
     const feedbackButton = document.querySelector("#inputContainer button:last-of-type");
     let conversation = [];
 
-     const conversationId = `${new Date().toISOString().replace(/[:.]/g, "-")}_${Math.random().toString(36).slice(2,7)}`;
-  const chatbotVersion = "Ylva_v1.0";
+    const conversationId = `${new Date().toISOString().replace(/[:.]/g, "-")}_${Math.random().toString(36).slice(2,7)}`;
+    const chatbotVersion = "Ylva_v1.0";
 
     userInput.addEventListener("keypress", function(event) {
       if (event.key === "Enter") {
@@ -114,9 +127,7 @@
       try {
         const response = await fetch("/api/chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ conversation })
         });
 
@@ -138,9 +149,7 @@
       try {
         const response = await fetch("/api/feedback", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ conversation: conversation })
         });
 
@@ -176,6 +185,48 @@
     window.addEventListener("resize", resizeChat);
     window.addEventListener("orientationchange", resizeChat);
     window.addEventListener("load", resizeChat);
+
+    // --- Tale til tekst logikk ---
+    document.addEventListener("DOMContentLoaded", () => {
+      const recordBtn = document.getElementById("recordBtn");
+      const uploadLabel = document.getElementById("uploadLabel");
+      const audioFileInput = document.getElementById("audioFileInput");
+      const iosHint = document.getElementById("iosHint");
+
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+      if (isIOS || isSafari) {
+        iosHint.style.display = "block";
+      } else {
+        recordBtn.style.display = "inline-block";
+        uploadLabel.style.display = "inline-block";
+      }
+
+      recordBtn.addEventListener("click", async () => {
+        alert("Opptaksfunksjon kobles til Whisper her 🚀");
+      });
+
+      audioFileInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("/api/transcribe", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+        if (data.text) {
+          document.getElementById("userInput").value = data.text;
+        } else {
+          alert("Kunne ikke transkribere lydfilen.");
+        }
+      });
+    });
   </script>
 </body>
 </html>
