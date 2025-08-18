@@ -346,6 +346,83 @@
 
     // initial layout
     applyViewportSizing();
+      // --- Mikrofon-ikon: Web Speech API (Chrome/Edge/Android) + iOS-hint + Whisper fallback ---
+  (function setupVoiceUI() {
+    const micBtn = document.getElementById("micBtn");
+    const userInput = document.getElementById("userInput");
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    // 1) iOS / Safari -> bruk tastaturets innebygde diktering
+    if (isIOS || isSafari) {
+      micBtn.style.display = "inline-block";
+      micBtn.addEventListener("click", () => {
+        alert("På iPhone/Safari: bruk mikrofon-ikonet på tastaturet for diktering.");
+      });
+      return;
+    }
+
+    // 2) Chrome/Edge/Android: Web Speech API (best UX)
+    if (SpeechRecognition) {
+      micBtn.style.display = "inline-block";
+      let recognizing = false;
+      let recognition;
+
+      const startRecognition = () => {
+        if (recognizing) return;
+        recognition = new SpeechRecognition();
+        recognition.lang = "no-NO";
+        recognition.interimResults = true;   // viser live mens man snakker
+        recognition.continuous = false;      // auto-stopper på stillhet
+
+        let finalText = "";
+        micBtn.textContent = "🎙️ lytter…";
+        recognizing = true;
+
+        recognition.onresult = (e) => {
+          let interim = "";
+          for (let i = e.resultIndex; i < e.results.length; ++i) {
+            const t = e.results[i][0].transcript;
+            if (e.results[i].isFinal) finalText += t;
+            else interim += t;
+          }
+          // viser alltid teksten i inputfeltet, ikke send automatisk
+          userInput.value = (finalText + " " + interim).trim();
+        };
+
+        recognition.onerror = () => {
+          micBtn.textContent = "🎤";
+          recognizing = false;
+        };
+
+        recognition.onend = () => {
+          micBtn.textContent = "🎤";
+          recognizing = false;
+          // sluttresultatet ligger nå i userInput, klart til å redigeres og sendes
+        };
+
+        recognition.start();
+      };
+
+      const stopRecognition = () => {
+        try { recognition && recognition.stop(); } catch {}
+      };
+
+      // Trykk for å starte/stoppe
+      micBtn.addEventListener("click", () => {
+        recognizing ? stopRecognition() : startRecognition();
+      });
+      return;
+    }
+
+    // 3) Fallback (andre nettlesere): behold Whisper-opptak (du har allerede /api/transcribe)
+    micBtn.style.display = "inline-block";
+    micBtn.addEventListener("click", () => {
+      alert("Nettleseren støtter ikke diktering. Vi bruker snart Whisper her – skriv inntil videre eller prøv Chrome.");
+    });
+  })();
+  // --- /Mikrofon-ikon ---
   </script>
 </body>
 </html>
