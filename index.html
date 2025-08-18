@@ -32,15 +32,18 @@
     }
     #instructions { overflow: hidden; margin-bottom: 20px; }
 
-    /* ====== INPUTRADEN ====== */
+    /* ====== INPUTRADEN (fikser at Send aldri gjemmes) ====== */
     #inputContainer {
-      position: fixed; bottom: 0; left: 0; right: 0;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
       margin: 0 auto;
       width: 100%; max-width: 800px;
       background: white;
       padding: 10px;
-      display: flex; align-items: center; justify-content: center;
-      flex-wrap: wrap; gap: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;            /* mellomrom mellom elementene */
+      flex-wrap: nowrap;   /* <- viktig: ingen wrapping */
       box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
       z-index: 100;
     }
@@ -48,26 +51,28 @@
     /* Input med mikrofon-ikon inni */
     .inputWrap {
       position: relative;
-      flex: 1 1 auto;
-      min-width: 260px;
-      max-width: 62%;        /* <- gir alltid plass til knappene */
+      flex: 1 1 auto;  /* kan krympe vokse */
+      min-width: 0;    /* lar feltet krympe før knapper skyves ut */
     }
     #userInput {
       width: 100%;
       padding: 10px 38px 10px 10px; /* plass til mic-ikonet */
+      box-sizing: border-box;
     }
 
-    /* Knappene må ikke krympe */
-    #inputContainer button { flex-shrink: 0; }
-
-    /* Send-knapp */
-    .btn-send { padding: 10px 12px; }
-
-    /* Mindre evalueringsknapp */
-    .btn-feedback {
-      padding: 8px 10px;
-      font-size: 0.9em;
+    /* Knappene skal ikke krympe eller wrappe */
+    button {
+      flex: 0 0 auto;
       white-space: nowrap;
+      padding: 10px 12px;
+      margin: 0; /* gap styrer avstand */
+    }
+    .btn-send { }
+
+    /* Litt strammere evalueringsknapp så teksten får plass */
+    .btn-feedback {
+      font-size: 0.95em;
+      padding: 8px 10px;
     }
 
     /* Mic-ikon i feltet */
@@ -81,9 +86,9 @@
     }
     #micBtn:active{ transform: translateY(-50%) scale(0.95); }
 
-    /* Små skjermer: legg knappene på ny rad hvis nødvendig */
-    @media (max-width: 520px){
-      .inputWrap { max-width: 100%; }
+    /* Ekstra innstramming på veldig små skjermer */
+    @media (max-width: 480px){
+      .btn-feedback { font-size: 0.9em; padding: 6px 8px; }
     }
   </style>
 </head>
@@ -108,8 +113,8 @@
       <button id="micBtn" title="Snakk" aria-label="Snakk">🎤</button>
     </div>
     <button class="btn-send" onclick="sendMessage()">Send</button>
-    <button class="btn-feedback" onclick="getFeedback()">Evaluer</button>
-    <div id="iosHint" style="display:none; font-size:0.9em; opacity:.8; width:100%; text-align:center;">
+    <button class="btn-feedback" onclick="getFeedback()">Få evaluering (tar 5 sek)</button>
+    <div id="iosHint" style="display:none; font-size:0.9em; opacity:.8;">
       På iPhone/Safari: bruk mikrofon-ikonet på tastaturet for diktering.
     </div>
   </div>
