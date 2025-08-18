@@ -14,11 +14,13 @@
     #chat {
       border: 1px solid #ccc;
       padding: 20px;
+      /* denne padding-bottomen blir oppdatert i JS basert på høyden til inputContainer */
       padding-bottom: 100px;
       height: calc(100vh - 450px);
       overflow-y: auto;
       background-color: #f9f9f9;
       margin-bottom: 10px;
+      -webkit-overflow-scrolling: touch;
     }
     .user { color: blue; margin: 10px 0; }
     .bot  { color: green; margin: 10px 0; }
@@ -35,52 +37,54 @@
     /* ====== INPUTRADEN ====== */
     #inputContainer {
       position: fixed;
-      bottom: 0; left: 0; right: 0;
+      left: 0; right: 0; bottom: 0;
       margin: 0 auto;
       width: 100%; max-width: 800px;
       background: white;
-      padding: 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: nowrap;   /* viktig: ingen wrapping */
+      /* litt ekstra bunn-padding for iPhone (safe area) */
+      padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+      display: flex; align-items: center; gap: 8px;
+      flex-wrap: nowrap;
       box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
       z-index: 100;
-    }
-
-    /* Input med mikrofon-ikon inni */
-    .inputWrap {
-      position: relative;
-      flex: 1 1 auto;
-      min-width: 0;             /* lar feltet krympe før knapper dyttes ut */
-    }
-    #userInput {
-      width: 100%;
-      padding: 10px 38px 10px 10px; /* plass til mic-ikonet */
       box-sizing: border-box;
     }
 
-    /* Knappene: samme skriftstørrelse */
+    .inputWrap {
+      position: relative;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    #userInput {
+      width: 100%;
+      padding: 12px 38px 12px 12px; /* plass til mic */
+      box-sizing: border-box;
+      font-size: 16px;
+      min-height: 42px;              /* litt større på mobil */
+    }
+
     button {
       flex: 0 0 auto;
       white-space: nowrap;
       padding: 10px 12px;
       margin: 0;
-      font-size: 14px; /* <- lik for Send og Evaluering */
+      font-size: 14px; /* lik for send og evaluering */
     }
-    .btn-send { }
-    .btn-feedback { }
 
-    /* Mic-ikon i feltet */
     #micBtn{
       position: absolute;
       right: 8px; top: 50%;
       transform: translateY(-50%);
       border: none; background: transparent;
       cursor: pointer; font-size: 18px; line-height: 1; padding: 4px;
-      display: inline-block; /* alltid synlig */
+      display: inline-block;
     }
     #micBtn:active{ transform: translateY(-50%) scale(0.95); }
+
+    /* når skjermen er veldig smal, kort ned placeholderen for å holde plass */
+    @media (max-width: 420px){
+      #userInput::placeholder { content: "Skriv…"; }
+    }
   </style>
 </head>
 <body>
@@ -97,7 +101,6 @@
 
   <div id="chat"></div>
 
-  <!-- Input-rad med mikrofon-ikon i feltet -->
   <div id="inputContainer">
     <div class="inputWrap">
       <input type="text" id="userInput" placeholder="Skriv noe til Ylva...">
@@ -110,12 +113,44 @@
   <script>
     const chat = document.getElementById("chat");
     const userInput = document.getElementById("userInput");
+    const inputBar = document.getElementById("inputContainer");
     const feedbackButton = document.querySelector(".btn-feedback");
     let conversation = [];
 
     const conversationId = `${new Date().toISOString().replace(/[:.]/g, "-")}_${Math.random().toString(36).slice(2,7)}`;
     const chatbotVersion = "Ylva_v1.0";
 
+    // ===== iOS / mobil visuell viewport-fiks =====
+    function applyViewportSizing() {
+      const vv = window.visualViewport;
+      const height = vv ? vv.height : window.innerHeight;
+      const vh = height * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+
+      // reserver plass til inputBar i bunnen av chat
+      chat.style.paddingBottom = (inputBar.offsetHeight + 20) + 'px';
+
+      // dynamisk høyde for chat som ikke havner under tastaturet
+      const topParts = document.body.clientHeight - document.documentElement.clientHeight; // vanligvis 0
+      const approxHeader = 450; // samme som i CSS-beregningen
+      const h = Math.max(160, (height - inputBar.offsetHeight - (approxHeader - 100))); 
+      chat.style.height = h + 'px';
+    }
+    window.visualViewport?.addEventListener('resize', applyViewportSizing);
+    window.visualViewport?.addEventListener('scroll', applyViewportSizing);
+    window.addEventListener('orientationchange', applyViewportSizing);
+    window.addEventListener('load', applyViewportSizing);
+    window.addEventListener('resize', applyViewportSizing);
+
+    // sørg for at felt + siste melding er synlig når man fokuserer inputen
+    userInput.addEventListener('focus', () => {
+      setTimeout(() => {
+        userInput.scrollIntoView({ block: 'nearest' });
+        chat.scrollTop = chat.scrollHeight;
+      }, 50);
+    });
+
+    // ===== chat-flyt =====
     userInput.addEventListener("keypress", function(event) {
       if (event.key === "Enter") sendMessage();
     });
@@ -141,6 +176,8 @@
       } catch (error) {
         appendMessage("System", "En feil oppstod i samtalen.", "bot");
         console.error("Feil fra API:", error);
+      } finally {
+        applyViewportSizing();
       }
     }
 
@@ -165,6 +202,7 @@
       } finally {
         feedbackButton.innerText = originalText;
         feedbackButton.disabled = false;
+        applyViewportSizing();
       }
     }
 
@@ -176,17 +214,7 @@
       requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; });
     }
 
-    const resizeChat = () => {
-      const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-      const chatBox = document.getElementById("chat");
-      chatBox.style.height = `calc(var(--vh, 1vh) * 100 - 450px)`;
-    };
-    window.addEventListener("resize", resizeChat);
-    window.addEventListener("orientationchange", resizeChat);
-    window.addEventListener("load", resizeChat);
-
-    // --- Mikrofon-ikon: én adferd for iOS/Safari (hint) og én for andre (Whisper senere) ---
+    // ===== mikrofonikon: info per plattform =====
     (function setupVoiceUI() {
       const micBtn = document.getElementById("micBtn");
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -200,7 +228,9 @@
         }
       });
     })();
-    // --- /Mikrofon-ikon ---
+
+    // initial layout
+    applyViewportSizing();
   </script>
 </body>
 </html>
