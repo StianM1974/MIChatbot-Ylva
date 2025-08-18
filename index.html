@@ -32,34 +32,45 @@
     }
     #instructions { overflow: hidden; margin-bottom: 20px; }
 
+    /* ====== INPUTRADEN ====== */
     #inputContainer {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
+      position: fixed; bottom: 0; left: 0; right: 0;
       margin: 0 auto;
       width: 100%; max-width: 800px;
       background: white;
       padding: 10px;
-      display: flex; justify-content: center; align-items: center; flex-wrap: wrap;
+      display: flex; align-items: center; justify-content: center;
+      flex-wrap: wrap; gap: 8px;
       box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
       z-index: 100;
-      gap: 5px;
     }
 
-    /* input med mikrofon-ikon */
+    /* Input med mikrofon-ikon inni */
     .inputWrap {
       position: relative;
-      flex: 1;
-      min-width: 200px;
-      margin-right: 5px;
+      flex: 1 1 auto;
+      min-width: 260px;
+      max-width: 62%;        /* <- gir alltid plass til knappene */
     }
     #userInput {
       width: 100%;
       padding: 10px 38px 10px 10px; /* plass til mic-ikonet */
     }
 
-    button { padding: 10px; margin: 5px; }
-    #inputContainer button { flex-shrink: 0; } /* gjør at input ikke dekker knappene */
+    /* Knappene må ikke krympe */
+    #inputContainer button { flex-shrink: 0; }
 
+    /* Send-knapp */
+    .btn-send { padding: 10px 12px; }
+
+    /* Mindre evalueringsknapp */
+    .btn-feedback {
+      padding: 8px 10px;
+      font-size: 0.9em;
+      white-space: nowrap;
+    }
+
+    /* Mic-ikon i feltet */
     #micBtn{
       position: absolute;
       right: 8px; top: 50%;
@@ -69,6 +80,11 @@
       display: none; /* vises via JS der det støttes */
     }
     #micBtn:active{ transform: translateY(-50%) scale(0.95); }
+
+    /* Små skjermer: legg knappene på ny rad hvis nødvendig */
+    @media (max-width: 520px){
+      .inputWrap { max-width: 100%; }
+    }
   </style>
 </head>
 <body>
@@ -91,9 +107,9 @@
       <input type="text" id="userInput" placeholder="Skriv noe til Ylva...">
       <button id="micBtn" title="Snakk" aria-label="Snakk">🎤</button>
     </div>
-    <button onclick="sendMessage()">Send</button>
-    <button onclick="getFeedback()">Få evaluering (tar 5 sek)</button>
-    <div id="iosHint" style="display:none; font-size:0.9em; opacity:.8; margin-left:8px;">
+    <button class="btn-send" onclick="sendMessage()">Send</button>
+    <button class="btn-feedback" onclick="getFeedback()">Evaluer</button>
+    <div id="iosHint" style="display:none; font-size:0.9em; opacity:.8; width:100%; text-align:center;">
       På iPhone/Safari: bruk mikrofon-ikonet på tastaturet for diktering.
     </div>
   </div>
@@ -101,7 +117,7 @@
   <script>
     const chat = document.getElementById("chat");
     const userInput = document.getElementById("userInput");
-    const feedbackButton = document.querySelector("#inputContainer button:last-of-type");
+    const feedbackButton = document.querySelector(".btn-feedback");
     let conversation = [];
 
     const conversationId = `${new Date().toISOString().replace(/[:.]/g, "-")}_${Math.random().toString(36).slice(2,7)}`;
@@ -137,14 +153,14 @@
 
     async function getFeedback() {
       const originalText = feedbackButton.innerText;
-      feedbackButton.innerText = "Vurderer samtalen …";
+      feedbackButton.innerText = "Vurderer …";
       feedbackButton.disabled = true;
 
       try {
         const response = await fetch("/api/feedback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ conversation: conversation })
+          body: JSON.stringify({ conversation })
         });
 
         const data = await response.json();
