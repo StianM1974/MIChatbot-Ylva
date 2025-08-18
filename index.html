@@ -32,7 +32,7 @@
     }
     #instructions { overflow: hidden; margin-bottom: 20px; }
 
-    /* ====== INPUTRADEN (fikser at Send aldri gjemmes) ====== */
+    /* ====== INPUTRADEN ====== */
     #inputContainer {
       position: fixed;
       bottom: 0; left: 0; right: 0;
@@ -42,8 +42,8 @@
       padding: 10px;
       display: flex;
       align-items: center;
-      gap: 8px;            /* mellomrom mellom elementene */
-      flex-wrap: nowrap;   /* <- viktig: ingen wrapping */
+      gap: 8px;
+      flex-wrap: nowrap;   /* viktig: ingen wrapping */
       box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
       z-index: 100;
     }
@@ -51,8 +51,8 @@
     /* Input med mikrofon-ikon inni */
     .inputWrap {
       position: relative;
-      flex: 1 1 auto;  /* kan krympe vokse */
-      min-width: 0;    /* lar feltet krympe før knapper skyves ut */
+      flex: 1 1 auto;
+      min-width: 0;             /* lar feltet krympe før knapper dyttes ut */
     }
     #userInput {
       width: 100%;
@@ -60,20 +60,16 @@
       box-sizing: border-box;
     }
 
-    /* Knappene skal ikke krympe eller wrappe */
+    /* Knappene: samme skriftstørrelse */
     button {
       flex: 0 0 auto;
       white-space: nowrap;
       padding: 10px 12px;
-      margin: 0; /* gap styrer avstand */
+      margin: 0;
+      font-size: 14px; /* <- lik for Send og Evaluering */
     }
     .btn-send { }
-
-    /* Litt strammere evalueringsknapp så teksten får plass */
-    .btn-feedback {
-      font-size: 0.95em;
-      padding: 8px 10px;
-    }
+    .btn-feedback { }
 
     /* Mic-ikon i feltet */
     #micBtn{
@@ -82,14 +78,9 @@
       transform: translateY(-50%);
       border: none; background: transparent;
       cursor: pointer; font-size: 18px; line-height: 1; padding: 4px;
-      display: none; /* vises via JS der det støttes */
+      display: inline-block; /* alltid synlig */
     }
     #micBtn:active{ transform: translateY(-50%) scale(0.95); }
-
-    /* Ekstra innstramming på veldig små skjermer */
-    @media (max-width: 480px){
-      .btn-feedback { font-size: 0.9em; padding: 6px 8px; }
-    }
   </style>
 </head>
 <body>
@@ -114,9 +105,6 @@
     </div>
     <button class="btn-send" onclick="sendMessage()">Send</button>
     <button class="btn-feedback" onclick="getFeedback()">Få evaluering (tar 5 sek)</button>
-    <div id="iosHint" style="display:none; font-size:0.9em; opacity:.8;">
-      På iPhone/Safari: bruk mikrofon-ikonet på tastaturet for diktering.
-    </div>
   </div>
 
   <script>
@@ -198,24 +186,18 @@
     window.addEventListener("orientationchange", resizeChat);
     window.addEventListener("load", resizeChat);
 
-    // --- Mikrofon-ikon: synlighet og (midlertidig) handling ---
+    // --- Mikrofon-ikon: én adferd for iOS/Safari (hint) og én for andre (Whisper senere) ---
     (function setupVoiceUI() {
       const micBtn = document.getElementById("micBtn");
-      const iosHint = document.getElementById("iosHint");
-
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-      if (isIOS || isSafari) {
-        iosHint.style.display = "block";   // bruk tastaturets diktering
-        micBtn.style.display = "none";
-      } else {
-        iosHint.style.display = "none";
-        micBtn.style.display = "inline-block"; // senere: kobles til Whisper
-      }
-
       micBtn.addEventListener("click", () => {
-        alert("Snart: taleopptak kobles til Whisper. Bruk diktering eller skriv inntil videre.");
+        if (isIOS || isSafari) {
+          alert("På iPhone/Safari: trykk mikrofon-ikonet på tastaturet for diktering.");
+        } else {
+          alert("Snart: taleopptak kobles til Whisper. Bruk skrivefeltet inntil videre.");
+        }
       });
     })();
     // --- /Mikrofon-ikon ---
