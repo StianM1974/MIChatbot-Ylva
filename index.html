@@ -252,20 +252,97 @@
       requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; });
     }
 
-    // ===== mikrofonikon: info per plattform =====
-    (function setupVoiceUI() {
-      const micBtn = document.getElementById("micBtn");
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+   // --- Mikrofon-ikon: opptak (Whisper) på ikke-iOS/Safari ---
+(function setupVoiceUI() {
+  const micBtn = document.getElementById("micBtn");
 
-      micBtn.addEventListener("click", () => {
-        if (isIOS || isSafari) {
-          alert("På iPhone/Safari: bruk mikrofon-ikonet på tastaturet for diktering.");
-        } else {
-          alert("Snart: taleopptak kobles til Whisper. Bruk skrivefeltet inntil videre.");
-        }
-      });
-    })();
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  // iOS/Safari: bruk tastaturets innebygde diktering
+  if (isIOS || isSafari) {
+    micBtn.style.display = "inline-block";
+    micBtn.addEventListener("click", () => {
+      alert("På iPhone/Safari: bruk mikrofon-ikonet på tastaturet for diktering.");
+    });
+    return;
+  }
+
+  // Andre plattformer: opptak via MediaRecorder -> Whisper
+  const supportsMediaRecorder = typeof window.MediaRecorder !== "undefined";
+  if (!supportsMediaRecorder) {
+    micBtn.style.display = "inline-block";
+    micBtn.addEventListener("click", () => {
+      alert("Nettleseren støtter ikke opptak her. Skriv eller bruk annen nettleser (Chrome/Edge).");
+    });
+    return;
+  }
+
+  micBtn.style.display = "inline-block";
+
+  let mediaRecorder = null;
+  let chunks = [];
+  let recording = false;
+
+  micBtn.addEventListener("click", async () => {
+    try {
+      if (!recording) {
+        // Start
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        chunks = [];
+        mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+        mediaRecorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+        mediaRecorder.onstop = async () => {
+          const blob = new Blob(chunks, { type: "audio/webm" });
+          const arrayBuffer = await blob.arrayBuffer();
+
+          // Convert to base64 safely
+          const uint8 = new Uint8Array(arrayBuffer);
+          let binary = "";
+          for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+          const base64 = btoa(binary);
+
+          // Send to /api/transcribe
+          const res = await fetch("/api/transcribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              audioBase64: base64,
+              mimeType: blob.type,
+              language: "no"
+            })
+          });
+
+          const data = await res.json();
+          if (data?.text) {
+            const field = document.getElementById("userInput");
+            field.value = data.text.trim();
+            field.focus();
+          } else {
+            alert("Kunne ikke transkribere lyd.");
+          }
+
+          // stop mics
+          stream.getTracks().forEach(t => t.stop());
+          micBtn.textContent = "🎤";
+          recording = false;
+        };
+
+        mediaRecorder.start();
+        micBtn.textContent = "■"; // opptak pågår
+        recording = true;
+      } else {
+        // Stop
+        mediaRecorder?.stop();
+      }
+    } catch (err) {
+      console.error("Opptaksfeil:", err);
+      alert("Fikk ikke startet opptak. Tillat mikrofon og prøv igjen.");
+      micBtn.textContent = "🎤";
+      recording = false;
+    }
+  });
+})();
 
     // initial layout
     applyViewportSizing();
