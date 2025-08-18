@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
   <meta charset="UTF-8">
   <title>MI-chatbot – Ylva</title>
   <style>
@@ -49,6 +49,7 @@
       box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
       z-index: 100;
       box-sizing: border-box;
+      will-change: transform;      /* glattere animasjon når tastatur åpnes */
     }
 
     /* Øverste rad (mobil): input + send */
@@ -71,7 +72,7 @@
       min-height: 42px;
     }
 
-    /* Mikrofon-knapp (SVG), lik app-stil */
+    /* Mikrofon-knapp (SVG), ChatGPT-lignende */
     #micBtn{
       position: absolute;
       right: 6px; top: 50%;
@@ -86,7 +87,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: background .15s ease, border-color .15s ease, box-shadow .2s ease;
+      transition: background .15s ease, border-color .15s ease, box-shadow .2s ease, transform .05s ease;
     }
     #micBtn:hover{ background: #eef0f3; }
     #micBtn:active{ transform: translateY(-50%) scale(0.98); }
@@ -176,8 +177,11 @@
         <!-- SVG-mikrofon (ChatGPT-lignende) -->
         <button id="micBtn" title="Snakk" aria-label="Snakk">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <!-- mikrofon-kapsel -->
             <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/>
+            <!-- stett -->
             <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <!-- fot -->
             <path d="M12 19v3"/>
           </svg>
         </button>
@@ -200,21 +204,29 @@
     const conversationId = `${new Date().toISOString().replace(/[:.]/g, "-")}_${Math.random().toString(36).slice(2,7)}`;
     const chatbotVersion = "Ylva_v1.0";
 
-    // ===== iOS / mobil visuell viewport-fiks =====
+    // ===== iOS / mobil visuell viewport-fiks (keyboard-aware) =====
     function applyViewportSizing() {
       const vv = window.visualViewport;
-      const height = vv ? vv.height : window.innerHeight;
-      const vh = height * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
+      const totalH = window.innerHeight;
 
-      // reserver plass til inputBar i bunnen av chat
-      chat.style.paddingBottom = (inputBar.offsetHeight + 20) + 'px';
+      // estimér tastatur-høyde (kb)
+      const kb = vv ? Math.max(0, totalH - (vv.height + vv.offsetTop)) : 0;
 
-      // dynamisk høyde for chat som ikke havner under tastaturet
-      const approxHeader = 450; // matcher CSS-startpunktet
-      const h = Math.max(160, (height - inputBar.offsetHeight - (approxHeader - 100)));
-      chat.style.height = h + 'px';
+      // løft input-baren over tastaturet
+      inputBar.style.transform = kb > 0 ? `translateY(-${kb}px)` : 'translateY(0)';
+
+      // gi chat nok bunn-padding til både inputBar og tastatur
+      const padBottom = inputBar.offsetHeight + kb + 20;
+      chat.style.paddingBottom = padBottom + 'px';
+
+      // beregn chat-høyde basert på synlig del av vinduet
+      const visibleH = vv ? vv.height : totalH;
+      const approxHeader = 450; // som før
+      const chatH = Math.max(160, (visibleH - inputBar.offsetHeight - (approxHeader - 100)));
+      chat.style.height = chatH + 'px';
     }
+
+    // reager på tastatur-åpning/lukking og orientering
     window.visualViewport?.addEventListener('resize', applyViewportSizing);
     window.visualViewport?.addEventListener('scroll', applyViewportSizing);
     window.addEventListener('orientationchange', applyViewportSizing);
@@ -333,6 +345,7 @@
               if (e.results[i].isFinal) finalText += t;
               else interim += t;
             }
+            // vis teksten i inputfeltet (redigerbar, sendes ikke automatisk)
             userInput.value = (finalText + " " + interim).trim();
           };
 
@@ -346,6 +359,7 @@
             micBtn.classList.remove("recording");
             micBtn.setAttribute("aria-label", "Snakk");
             recognizing = false;
+            // sluttresultatet ligger nå i userInput, klart til å redigeres og sendes
           };
 
           recognizing = true;
@@ -356,6 +370,7 @@
           try { recognition && recognition.stop(); } catch {}
         };
 
+        // Trykk for å starte/stoppe
         micBtn.addEventListener("click", () => {
           recognizing ? stopRecognition() : startRecognition();
         });
