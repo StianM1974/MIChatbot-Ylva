@@ -176,11 +176,8 @@
         <!-- SVG-mikrofon (ChatGPT-lignende) -->
         <button id="micBtn" title="Snakk" aria-label="Snakk">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <!-- mikrofon-kapsel -->
             <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/>
-            <!-- stett -->
             <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <!-- fot -->
             <path d="M12 19v3"/>
           </svg>
         </button>
@@ -336,7 +333,6 @@
               if (e.results[i].isFinal) finalText += t;
               else interim += t;
             }
-            // vis teksten i inputfeltet (redigerbar, sendes ikke automatisk)
             userInput.value = (finalText + " " + interim).trim();
           };
 
@@ -350,7 +346,6 @@
             micBtn.classList.remove("recording");
             micBtn.setAttribute("aria-label", "Snakk");
             recognizing = false;
-            // sluttresultatet ligger nå i userInput, klart til å redigeres og sendes
           };
 
           recognizing = true;
@@ -361,7 +356,6 @@
           try { recognition && recognition.stop(); } catch {}
         };
 
-        // Trykk for å starte/stoppe
         micBtn.addEventListener("click", () => {
           recognizing ? stopRecognition() : startRecognition();
         });
@@ -377,17 +371,6 @@
 
     // initial layout
     applyViewportSizing();
-    // 3) Fallback: ingen støtte
-      micBtn.style.display = "inline-flex";
-      micBtn.addEventListener("click", () => {
-        alert("Nettleseren støtter ikke diktering. Bruk Chrome eller Safari sitt tastatur.");
-      });
-    })();
-
-    // initial layout
-    applyViewportSizing();
-  </script>
-</body>
   </script>
 </body>
 </html>
