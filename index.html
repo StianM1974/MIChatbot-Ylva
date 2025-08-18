@@ -20,14 +20,9 @@
       background-color: #f9f9f9;
       margin-bottom: 10px;
     }
-    .user {
-      color: blue;
-      margin: 10px 0;
-    }
-    .bot {
-      color: green;
-      margin: 10px 0;
-    }
+    .user { color: blue; margin: 10px 0; }
+    .bot  { color: green; margin: 10px 0; }
+
     #avatar {
       float: left;
       margin-right: 15px;
@@ -35,27 +30,21 @@
       width: 80px;
       height: 80px;
     }
-    #instructions {
-      overflow: hidden;
-      margin-bottom: 20px;
-    }
+    #instructions { overflow: hidden; margin-bottom: 20px; }
+
     #inputContainer {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      bottom: 0; left: 0; right: 0;
       margin: 0 auto;
-      width: 100%;
-      max-width: 800px;
+      width: 100%; max-width: 800px;
       background: white;
       padding: 10px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-      box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
+      display: flex; justify-content: center; align-items: center; flex-wrap: wrap;
+      box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
       z-index: 100;
+      gap: 5px;
     }
+
     /* input med mikrofon-ikon */
     .inputWrap {
       position: relative;
@@ -67,24 +56,19 @@
       width: 100%;
       padding: 10px 38px 10px 10px; /* plass til mic-ikonet */
     }
-    button {
-      padding: 10px;
-      margin: 5px;
-    }
-    #micBtn {
+
+    button { padding: 10px; margin: 5px; }
+    #inputContainer button { flex-shrink: 0; } /* gjør at input ikke dekker knappene */
+
+    #micBtn{
       position: absolute;
-      right: 8px;
-      top: 50%;
+      right: 8px; top: 50%;
       transform: translateY(-50%);
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      font-size: 18px;
-      line-height: 1;
-      padding: 4px;
+      border: none; background: transparent;
+      cursor: pointer; font-size: 18px; line-height: 1; padding: 4px;
       display: none; /* vises via JS der det støttes */
     }
-    #micBtn:active { transform: translateY(-50%) scale(0.95); }
+    #micBtn:active{ transform: translateY(-50%) scale(0.95); }
   </style>
 </head>
 <body>
@@ -94,14 +78,14 @@
     <p><strong>Ylva (17)</strong> falt ut av videregående etter å ha hatt kyssesyken. Hun ble hengende etter faglig og trakk seg unna sosialt, men hun har hatt gode karakterer tidligere og er motivert for å komme tilbake. Hun er usikker på hvordan hun kan finne balansen mellom ambisjoner og å ikke presse seg for hardt etter utmattelsen.</p>
     <p><strong>Mål:</strong> Bygg relasjon og utforsk både bekymringer, styrker og ideer for fremtiden. Ikke press, men hjelp henne å reflektere rundt balanse og motivasjon.</p>
     <p><strong>MI-kurs:</strong> Arbeidspsykolog Stian Midtgård arrangerer MI-kurs hvor du vil møte Ylva og andre AI-bots.<br>
-    <a href="https://www.arbeidspsykolog.no/webinar/" target="_blank">Les mer og meld deg på</a><br>
-    <a href="https://mailchi.mp/arbeidspsykolog.no/f-oppdateringer-om-mi-bots-og-kurs" target="_blank">Registrer deg for nye AI-bots og nyheter</a></p>
+      <a href="https://www.arbeidspsykolog.no/webinar/" target="_blank">Les mer og meld deg på</a><br>
+      <a href="https://mailchi.mp/arbeidspsykolog.no/f-oppdateringer-om-mi-bots-og-kurs" target="_blank">Registrer deg for nye AI-bots og nyheter</a></p>
     <p style="font-size: 0.9em;">Dette er en Beta-versjon – send gjerne kopi av samtalen om dere oppdager "bugs" til <a href="mailto:stian@arbeidspsykolog.no">stian@arbeidspsykolog.no</a></p>
   </div>
 
   <div id="chat"></div>
 
-  <!-- NY input-rad med mikrofon-ikon i feltet -->
+  <!-- Input-rad med mikrofon-ikon i feltet -->
   <div id="inputContainer">
     <div class="inputWrap">
       <input type="text" id="userInput" placeholder="Skriv noe til Ylva...">
@@ -124,9 +108,7 @@
     const chatbotVersion = "Ylva_v1.0";
 
     userInput.addEventListener("keypress", function(event) {
-      if (event.key === "Enter") {
-        sendMessage();
-      }
+      if (event.key === "Enter") sendMessage();
     });
 
     async function sendMessage() {
@@ -182,9 +164,7 @@
       message.className = cssClass;
       message.innerHTML = `<strong>${sender}:</strong> ${text}`;
       chat.appendChild(message);
-      requestAnimationFrame(() => {
-        chat.scrollTop = chat.scrollHeight;
-      });
+      requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; });
     }
 
     const resizeChat = () => {
@@ -193,7 +173,6 @@
       const chatBox = document.getElementById("chat");
       chatBox.style.height = `calc(var(--vh, 1vh) * 100 - 450px)`;
     };
-
     window.addEventListener("resize", resizeChat);
     window.addEventListener("orientationchange", resizeChat);
     window.addEventListener("load", resizeChat);
@@ -207,17 +186,15 @@
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
       if (isIOS || isSafari) {
-        // iPhone/Safari: bruk tastaturets innebygde diktering
-        iosHint.style.display = "block";
+        iosHint.style.display = "block";   // bruk tastaturets diktering
         micBtn.style.display = "none";
       } else {
-        // Andre: vis mikrofon-ikon (kan kobles til Whisper senere)
         iosHint.style.display = "none";
-        micBtn.style.display = "inline-block";
+        micBtn.style.display = "inline-block"; // senere: kobles til Whisper
       }
 
       micBtn.addEventListener("click", () => {
-        alert("Snart: taleopptak kobles til Whisper. For nå: bruk tastaturets diktering eller skriv.");
+        alert("Snart: taleopptak kobles til Whisper. Bruk diktering eller skriv inntil videre.");
       });
     })();
     // --- /Mikrofon-ikon ---
