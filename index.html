@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta charset="UTF-8">
   <title>MI-chatbot – Ylva</title>
   <style>
@@ -41,14 +41,24 @@
       margin: 0 auto;
       width: 100%; max-width: 800px;
       background: white;
+      /* litt ekstra bunn-padding for iPhone (safe area) */
       padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
-      display: flex; align-items: center; gap: 8px;
-      flex-wrap: nowrap;
+      display: flex;
+      flex-wrap: wrap;           /* <- muliggjør ny rad for evalueringsknapp */
+      align-items: center;
+      gap: 8px;
       box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
       z-index: 100;
       box-sizing: border-box;
     }
 
+    /* Øverste rad: input + send */
+    .inputRow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
     .inputWrap {
       position: relative;
       flex: 1 1 auto;
@@ -56,21 +66,11 @@
     }
     #userInput {
       width: 100%;
-      padding: 14px 42px 14px 14px;   /* litt mer plass + mic-ikon */
+      padding: 12px 38px 12px 12px; /* plass til mic */
       box-sizing: border-box;
-      font-size: 17px;                /* iOS-vennlig, hindrer uønsket zoom */
-      min-height: 50px;               /* større trykkflate på mobil */
-      line-height: 1.25;
+      font-size: 16px;
+      min-height: 42px;
     }
-
-    button {
-      flex: 0 0 auto;
-      white-space: nowrap;
-      padding: 10px 12px;
-      margin: 0;
-      font-size: 14px; /* lik for send og evaluering */
-    }
-
     #micBtn{
       position: absolute;
       right: 8px; top: 50%;
@@ -81,7 +81,27 @@
     }
     #micBtn:active{ transform: translateY(-50%) scale(0.95); }
 
-    /* veldig smale skjermer: ikke kutt knapper, la input få mest plass */
+    /* Send-knapp */
+    .btn-send {
+      flex: 0 0 auto;
+      white-space: nowrap;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+
+    /* Egen rad under: evalueringsknapp */
+    .feedbackRow {
+      width: 100%;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .btn-feedback {
+      padding: 10px 12px;
+      font-size: 14px;      /* like liten som Send */
+      white-space: nowrap;
+    }
+
+    /* Små skjermer: kort placeholder */
     @media (max-width: 420px){
       #userInput::placeholder { content: "Skriv…"; }
     }
@@ -101,13 +121,19 @@
 
   <div id="chat"></div>
 
+  <!-- Input: øverste rad = tekstfelt + send. Under = evalueringsknapp. -->
   <div id="inputContainer">
-    <div class="inputWrap">
-      <input type="text" id="userInput" placeholder="Skriv noe til Ylva...">
-      <button id="micBtn" title="Snakk" aria-label="Snakk">🎤</button>
+    <div class="inputRow">
+      <div class="inputWrap">
+        <input type="text" id="userInput" placeholder="Skriv noe til Ylva...">
+        <button id="micBtn" title="Snakk" aria-label="Snakk">🎤</button>
+      </div>
+      <button class="btn-send" onclick="sendMessage()">Send</button>
     </div>
-    <button class="btn-send" onclick="sendMessage()">Send</button>
-    <button class="btn-feedback" onclick="getFeedback()">Få evaluering (tar 5 sek)</button>
+
+    <div class="feedbackRow">
+      <button class="btn-feedback" onclick="getFeedback()">Få evaluering (tar 5 sek)</button>
+    </div>
   </div>
 
   <script>
@@ -130,9 +156,9 @@
       // reserver plass til inputBar i bunnen av chat
       chat.style.paddingBottom = (inputBar.offsetHeight + 20) + 'px';
 
-      // mer rom for chat når tastaturet er oppe
-      const headerAllowance = 320; // gjør chat-boksen høyere enn før
-      const h = Math.max(200, height - inputBar.offsetHeight - headerAllowance);
+      // dynamisk høyde for chat som ikke havner under tastaturet
+      const approxHeader = 450; // matcher CSS-startpunktet
+      const h = Math.max(160, (height - inputBar.offsetHeight - (approxHeader - 100)));
       chat.style.height = h + 'px';
     }
     window.visualViewport?.addEventListener('resize', applyViewportSizing);
@@ -185,7 +211,7 @@
       feedbackButton.innerText = "Vurderer …";
       feedbackButton.disabled = true;
 
-    try {
+      try {
         const response = await fetch("/api/feedback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -221,7 +247,7 @@
 
       micBtn.addEventListener("click", () => {
         if (isIOS || isSafari) {
-          alert("På iPhone/Safari: trykk mikrofon-ikonet på tastaturet for diktering.");
+          alert("På iPhone/Safari: bruk mikrofon-ikonet på tastaturet for diktering.");
         } else {
           alert("Snart: taleopptak kobles til Whisper. Bruk skrivefeltet inntil videre.");
         }
