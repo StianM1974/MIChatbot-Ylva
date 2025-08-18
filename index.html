@@ -65,20 +65,54 @@
     }
     #userInput {
       width: 100%;
-      padding: 12px 38px 12px 12px; /* plass til mic */
+      padding: 12px 42px 12px 12px; /* plass til mic */
       box-sizing: border-box;
       font-size: 16px;
       min-height: 42px;
     }
+
+    /* Mikrofon-knapp (SVG), lik app-stil */
     #micBtn{
       position: absolute;
-      right: 8px; top: 50%;
+      right: 6px; top: 50%;
       transform: translateY(-50%);
-      border: none; background: transparent;
-      cursor: pointer; font-size: 18px; line-height: 1; padding: 4px;
-      display: inline-block;
+      border: 1px solid #e5e7eb;
+      background: #f3f4f6;
+      cursor: pointer;
+      padding: 6px;
+      width: 32px;
+      height: 32px;
+      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s ease, border-color .15s ease, box-shadow .2s ease;
     }
-    #micBtn:active{ transform: translateY(-50%) scale(0.95); }
+    #micBtn:hover{ background: #eef0f3; }
+    #micBtn:active{ transform: translateY(-50%) scale(0.98); }
+
+    /* SVG-ikonet */
+    #micBtn svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+      stroke: #111827; /* mørk grå */
+    }
+
+    /* Opptak: rød bakgrunn + subtil puls (ripple) */
+    #micBtn.recording {
+      background: #fee2e2;        /* lys rød */
+      border-color: #fecaca;
+      box-shadow: 0 0 0 0 rgba(239,68,68,0.50);
+      animation: micpulse 1.5s ease-out infinite;
+    }
+    #micBtn.recording svg { stroke: #b91c1c; } /* mørkere rød ikonlinje */
+
+    @keyframes micpulse {
+      0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.50); }
+      70%  { box-shadow: 0 0 0 10px rgba(239,68,68,0.0); }
+      100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.0); }
+    }
 
     .btn-send {
       flex: 0 0 auto;
@@ -99,7 +133,7 @@
       white-space: nowrap;
     }
 
-    /* Små skjermer: kort placeholder */
+    /* Små skjermer: kort placeholder (valgfritt hint) */
     @media (max-width: 420px){
       #userInput::placeholder { content: "Skriv…"; }
     }
@@ -139,7 +173,17 @@
     <div class="inputRow">
       <div class="inputWrap">
         <input type="text" id="userInput" placeholder="Skriv noe til Ylva...">
-        <button id="micBtn" title="Snakk" aria-label="Snakk">🎤</button>
+        <!-- SVG-mikrofon (ChatGPT-lignende) -->
+        <button id="micBtn" title="Snakk" aria-label="Snakk">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <!-- mikrofon-kapsel -->
+            <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/>
+            <!-- stett -->
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <!-- fot -->
+            <path d="M12 19v3"/>
+          </svg>
+        </button>
       </div>
       <button class="btn-send" onclick="sendMessage()">Send</button>
     </div>
@@ -252,177 +296,87 @@
       requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; });
     }
 
-   // --- Mikrofon-ikon: opptak (Whisper) på ikke-iOS/Safari ---
-(function setupVoiceUI() {
-  const micBtn = document.getElementById("micBtn");
+    // --- Mikrofon-ikon: Web Speech API (Chrome/Edge/Android) + iOS-hint ---
+    (function setupVoiceUI() {
+      const micBtn = document.getElementById("micBtn");
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      // 1) iOS / Safari: bruk tastaturets innebygde diktering
+      if (isIOS || isSafari) {
+        micBtn.style.display = "inline-flex";
+        micBtn.addEventListener("click", () => {
+          alert("På iPhone/Safari: bruk mikrofon-ikonet på tastaturet for diktering.");
+        });
+        return;
+      }
 
-  // iOS/Safari: bruk tastaturets innebygde diktering
-  if (isIOS || isSafari) {
-    micBtn.style.display = "inline-block";
-    micBtn.addEventListener("click", () => {
-      alert("På iPhone/Safari: bruk mikrofon-ikonet på tastaturet for diktering.");
-    });
-    return;
-  }
+      // 2) Chrome/Edge/Android: Web Speech API
+      if (SpeechRecognition) {
+        micBtn.style.display = "inline-flex";
+        let recognizing = false;
+        let recognition;
 
-  // Andre plattformer: opptak via MediaRecorder -> Whisper
-  const supportsMediaRecorder = typeof window.MediaRecorder !== "undefined";
-  if (!supportsMediaRecorder) {
-    micBtn.style.display = "inline-block";
-    micBtn.addEventListener("click", () => {
-      alert("Nettleseren støtter ikke opptak her. Skriv eller bruk annen nettleser (Chrome/Edge).");
-    });
-    return;
-  }
+        const startRecognition = () => {
+          if (recognizing) return;
+          recognition = new SpeechRecognition();
+          recognition.lang = "no-NO";
+          recognition.interimResults = true;
+          recognition.continuous = false; // stopper på stillhet
 
-  micBtn.style.display = "inline-block";
+          let finalText = "";
+          micBtn.classList.add("recording");
+          micBtn.setAttribute("aria-label", "Lytter…");
 
-  let mediaRecorder = null;
-  let chunks = [];
-  let recording = false;
+          recognition.onresult = (e) => {
+            let interim = "";
+            for (let i = e.resultIndex; i < e.results.length; ++i) {
+              const t = e.results[i][0].transcript;
+              if (e.results[i].isFinal) finalText += t;
+              else interim += t;
+            }
+            // vis teksten i inputfeltet (redigerbar, sendes ikke automatisk)
+            userInput.value = (finalText + " " + interim).trim();
+          };
 
-  micBtn.addEventListener("click", async () => {
-    try {
-      if (!recording) {
-        // Start
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        chunks = [];
-        mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-        mediaRecorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
-        mediaRecorder.onstop = async () => {
-          const blob = new Blob(chunks, { type: "audio/webm" });
-          const arrayBuffer = await blob.arrayBuffer();
+          recognition.onerror = () => {
+            micBtn.classList.remove("recording");
+            micBtn.setAttribute("aria-label", "Snakk");
+            recognizing = false;
+          };
 
-          // Convert to base64 safely
-          const uint8 = new Uint8Array(arrayBuffer);
-          let binary = "";
-          for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
-          const base64 = btoa(binary);
+          recognition.onend = () => {
+            micBtn.classList.remove("recording");
+            micBtn.setAttribute("aria-label", "Snakk");
+            recognizing = false;
+            // sluttresultatet ligger nå i userInput, klart til å redigeres og sendes
+          };
 
-          // Send to /api/transcribe
-          const res = await fetch("/api/transcribe", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              audioBase64: base64,
-              mimeType: blob.type,
-              language: "no"
-            })
-          });
-
-          const data = await res.json();
-          if (data?.text) {
-            const field = document.getElementById("userInput");
-            field.value = data.text.trim();
-            field.focus();
-          } else {
-            alert("Kunne ikke transkribere lyd.");
-          }
-
-          // stop mics
-          stream.getTracks().forEach(t => t.stop());
-          micBtn.textContent = "🎤";
-          recording = false;
+          recognizing = true;
+          recognition.start();
         };
 
-        mediaRecorder.start();
-        micBtn.textContent = "■"; // opptak pågår
-        recording = true;
-      } else {
-        // Stop
-        mediaRecorder?.stop();
+        const stopRecognition = () => {
+          try { recognition && recognition.stop(); } catch {}
+        };
+
+        // Trykk for å starte/stoppe
+        micBtn.addEventListener("click", () => {
+          recognizing ? stopRecognition() : startRecognition();
+        });
+        return;
       }
-    } catch (err) {
-      console.error("Opptaksfeil:", err);
-      alert("Fikk ikke startet opptak. Tillat mikrofon og prøv igjen.");
-      micBtn.textContent = "🎤";
-      recording = false;
-    }
-  });
-})();
+
+      // 3) Fallback: ingen støtte
+      micBtn.style.display = "inline-flex";
+      micBtn.addEventListener("click", () => {
+        alert("Nettleseren støtter ikke diktering. Bruk Chrome eller Safari sitt tastatur.");
+      });
+    })();
 
     // initial layout
     applyViewportSizing();
-      // --- Mikrofon-ikon: Web Speech API (Chrome/Edge/Android) + iOS-hint + Whisper fallback ---
-  (function setupVoiceUI() {
-    const micBtn = document.getElementById("micBtn");
-    const userInput = document.getElementById("userInput");
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    // 1) iOS / Safari -> bruk tastaturets innebygde diktering
-    if (isIOS || isSafari) {
-      micBtn.style.display = "inline-block";
-      micBtn.addEventListener("click", () => {
-        alert("På iPhone/Safari: bruk mikrofon-ikonet på tastaturet for diktering.");
-      });
-      return;
-    }
-
-    // 2) Chrome/Edge/Android: Web Speech API (best UX)
-    if (SpeechRecognition) {
-      micBtn.style.display = "inline-block";
-      let recognizing = false;
-      let recognition;
-
-      const startRecognition = () => {
-        if (recognizing) return;
-        recognition = new SpeechRecognition();
-        recognition.lang = "no-NO";
-        recognition.interimResults = true;   // viser live mens man snakker
-        recognition.continuous = false;      // auto-stopper på stillhet
-
-        let finalText = "";
-        micBtn.textContent = "🎙️ lytter…";
-        recognizing = true;
-
-        recognition.onresult = (e) => {
-          let interim = "";
-          for (let i = e.resultIndex; i < e.results.length; ++i) {
-            const t = e.results[i][0].transcript;
-            if (e.results[i].isFinal) finalText += t;
-            else interim += t;
-          }
-          // viser alltid teksten i inputfeltet, ikke send automatisk
-          userInput.value = (finalText + " " + interim).trim();
-        };
-
-        recognition.onerror = () => {
-          micBtn.textContent = "🎤";
-          recognizing = false;
-        };
-
-        recognition.onend = () => {
-          micBtn.textContent = "🎤";
-          recognizing = false;
-          // sluttresultatet ligger nå i userInput, klart til å redigeres og sendes
-        };
-
-        recognition.start();
-      };
-
-      const stopRecognition = () => {
-        try { recognition && recognition.stop(); } catch {}
-      };
-
-      // Trykk for å starte/stoppe
-      micBtn.addEventListener("click", () => {
-        recognizing ? stopRecognition() : startRecognition();
-      });
-      return;
-    }
-
-    // 3) Fallback (andre nettlesere): behold Whisper-opptak (du har allerede /api/transcribe)
-    micBtn.style.display = "inline-block";
-    micBtn.addEventListener("click", () => {
-      alert("Nettleseren støtter ikke diktering. Vi bruker snart Whisper her – skriv inntil videre eller prøv Chrome.");
-    });
-  })();
-  // --- /Mikrofon-ikon ---
   </script>
 </body>
 </html>
