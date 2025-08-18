@@ -34,17 +34,16 @@
     }
     #instructions { overflow: hidden; margin-bottom: 20px; }
 
-    /* ====== INPUTRADEN ====== */
+    /* ====== INPUTRADEN (mobil først) ====== */
     #inputContainer {
       position: fixed;
       left: 0; right: 0; bottom: 0;
       margin: 0 auto;
       width: 100%; max-width: 800px;
       background: white;
-      /* litt ekstra bunn-padding for iPhone (safe area) */
       padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
       display: flex;
-      flex-wrap: wrap;           /* <- muliggjør ny rad for evalueringsknapp */
+      flex-wrap: wrap;             /* mobil: to rader */
       align-items: center;
       gap: 8px;
       box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
@@ -52,7 +51,7 @@
       box-sizing: border-box;
     }
 
-    /* Øverste rad: input + send */
+    /* Øverste rad (mobil): input + send */
     .inputRow {
       display: flex;
       align-items: center;
@@ -81,7 +80,6 @@
     }
     #micBtn:active{ transform: translateY(-50%) scale(0.95); }
 
-    /* Send-knapp */
     .btn-send {
       flex: 0 0 auto;
       white-space: nowrap;
@@ -89,21 +87,36 @@
       font-size: 14px;
     }
 
-    /* Egen rad under: evalueringsknapp */
+    /* Egen rad under (mobil): midtstilt evaluering */
     .feedbackRow {
       width: 100%;
       display: flex;
-      justify-content: flex-end;
+      justify-content: center;     /* mobil: midtstilt */
     }
     .btn-feedback {
       padding: 10px 12px;
-      font-size: 14px;      /* like liten som Send */
+      font-size: 14px;             /* lik som Send */
       white-space: nowrap;
     }
 
     /* Små skjermer: kort placeholder */
     @media (max-width: 420px){
       #userInput::placeholder { content: "Skriv…"; }
+    }
+
+    /* ====== Desktop / store skjermer ====== */
+    @media (min-width: 700px){
+      #inputContainer {
+        flex-wrap: nowrap;         /* én rad */
+      }
+      .inputRow {
+        width: auto;
+        flex: 1 1 auto;            /* tar tilgjengelig plass */
+      }
+      .feedbackRow {
+        width: auto;
+        justify-content: flex-start; /* ikke midtstilt på desktop */
+      }
     }
   </style>
 </head>
@@ -121,7 +134,7 @@
 
   <div id="chat"></div>
 
-  <!-- Input: øverste rad = tekstfelt + send. Under = evalueringsknapp. -->
+  <!-- Input: mobil = to rader, desktop = én rad -->
   <div id="inputContainer">
     <div class="inputRow">
       <div class="inputWrap">
