@@ -226,6 +226,17 @@
       chat.style.height = chatH + 'px';
     }
 
+    // HJELPER: hold input synlig etter DOM-endringer/fokus
+    function ensureInputVisible() {
+      applyViewportSizing();
+      requestAnimationFrame(() => {
+        chat.scrollTop = chat.scrollHeight;
+        inputBar.scrollIntoView({ block: 'end', behavior: 'auto' });
+        // iOS kan kreve et lite “nudge”:
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'auto' });
+      });
+    }
+
     // reager på tastatur-åpning/lukking og orientering
     window.visualViewport?.addEventListener('resize', applyViewportSizing);
     window.visualViewport?.addEventListener('scroll', applyViewportSizing);
@@ -236,10 +247,16 @@
     // sørg for at felt + siste melding er synlig når man fokuserer inputen
     userInput.addEventListener('focus', () => {
       setTimeout(() => {
-        userInput.scrollIntoView({ block: 'nearest' });
-        chat.scrollTop = chat.scrollHeight;
+        ensureInputVisible();
       }, 50);
     });
+
+    // OBSERVER: når chat får nye meldinger (DOM endres), hold input synlig
+    const chatObserver = new MutationObserver(() => {
+      // gi layout et øyeblikk til å reflowe før vi justerer
+      setTimeout(ensureInputVisible, 0);
+    });
+    chatObserver.observe(chat, { childList: true });
 
     // ===== chat-flyt =====
     userInput.addEventListener("keypress", function(event) {
@@ -268,7 +285,7 @@
         appendMessage("System", "En feil oppstod i samtalen.", "bot");
         console.error("Feil fra API:", error);
       } finally {
-        applyViewportSizing();
+        ensureInputVisible();
       }
     }
 
@@ -293,7 +310,7 @@
       } finally {
         feedbackButton.innerText = originalText;
         feedbackButton.disabled = false;
-        applyViewportSizing();
+        ensureInputVisible();
       }
     }
 
@@ -302,7 +319,7 @@
       message.className = cssClass;
       message.innerHTML = `<strong>${sender}:</strong> ${text}`;
       chat.appendChild(message);
-      requestAnimationFrame(() => { chat.scrollTop = chat.scrollHeight; });
+      // NB: MutationObserver kaller ensureInputVisible() etter DOM-append
     }
 
     // --- Mikrofon-ikon: Web Speech API (Chrome/Edge/Android) + iOS-hint ---
@@ -345,7 +362,6 @@
               if (e.results[i].isFinal) finalText += t;
               else interim += t;
             }
-            // vis teksten i inputfeltet (redigerbar, sendes ikke automatisk)
             userInput.value = (finalText + " " + interim).trim();
           };
 
@@ -359,7 +375,6 @@
             micBtn.classList.remove("recording");
             micBtn.setAttribute("aria-label", "Snakk");
             recognizing = false;
-            // sluttresultatet ligger nå i userInput, klart til å redigeres og sendes
           };
 
           recognizing = true;
@@ -370,7 +385,6 @@
           try { recognition && recognition.stop(); } catch {}
         };
 
-        // Trykk for å starte/stoppe
         micBtn.addEventListener("click", () => {
           recognizing ? stopRecognition() : startRecognition();
         });
