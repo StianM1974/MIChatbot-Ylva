@@ -298,46 +298,87 @@ wrap.appendChild(micBtn);
         return;
       }
 
-      let recognizing = false;
-      let recognition;
+      // Sticky, pause-tolerant dictation for Chrome/Edge
+let recognizing = false;
+let userStopped = false;   // user explicitly toggled off
+let sticky = false;        // mic stays "on" until clicked again
+let recognition;
+let baseText = "";         // accumulate final results
 
-      const startRecognition = () => {
-        if (recognizing) return;
-        recognition = new SpeechRecognition();
-        recognition.lang = "no-NO";
-        recognition.interimResults = true;
-        recognition.continuous = false;
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-        let finalText = "";
-        recognizing = true;
-        micBtn.classList.add('recording');
-        micBtn.setAttribute('aria-label','Lytter…');
+function startRecognition() {
+  if (recognizing) return;
+  recognition = new SR();
+  recognition.lang = "no-NO";
+  recognition.interimResults = true;
+  recognition.continuous = true;  // tolerate pauses
 
-        recognition.onresult = (e) => {
-          let interim = "";
-          for (let i = e.resultIndex; i < e.results.length; ++i) {
-            const t = e.results[i][0].transcript;
-            if (e.results[i].isFinal) finalText += t;
-            else interim += t;
-          }
-          input.value = (finalText + " " + interim).trim();
-        };
+  // continue from what’s already in the input
+  baseText = input.value.trim();
+  userStopped = false;
+  recognizing = true;
 
-        const stopUI = () => {
-          recognizing = false;
-          micBtn.classList.remove('recording');
-          micBtn.setAttribute('aria-label','Snakk');
-        };
+  micBtn.classList.add('recording');
+  micBtn.setAttribute('aria-label','Lytter…');
 
-        recognition.onerror = stopUI;
-        recognition.onend = stopUI;
+  recognition.onresult = (e) => {
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; ++i) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) {
+        baseText = (baseText ? baseText + " " : "") + t.trim();
+      } else {
+        interim += t;
+      }
+    }
+    input.value = (baseText + (interim ? " " + interim.trim() : "")).trim();
+  };
 
-        recognition.start();
-      };
+  const cleanUI = () => {
+    recognizing = false;
+    // keep ripple if sticky (we will restart silently)
+    if (!sticky) {
+      micBtn.classList.remove('recording');
+      micBtn.setAttribute('aria-label','Snakk');
+    } else {
+      micBtn.setAttribute('aria-label','Lytter…');
+    }
+  };
 
-      const stopRecognition = () => {
-        try { recognition && recognition.stop(); } catch {}
-      };
+  recognition.onerror = () => {
+    cleanUI();
+    if (!userStopped && sticky) {
+      setTimeout(() => { try { startRecognition(); } catch {} }, 100);
+    }
+  };
+
+  recognition.onend = () => {
+    cleanUI();
+    // some platforms end on silence — auto-restart if sticky
+    if (!userStopped && sticky) {
+      setTimeout(() => { try { startRecognition(); } catch {} }, 100);
+    }
+  };
+
+  recognition.start();
+}
+
+function stopRecognition() {
+  userStopped = true;
+  try { recognition && recognition.stop(); } catch {}
+}
+
+// Toggle sticky on click
+micBtn.addEventListener('click', () => {
+  if (!sticky) {
+    sticky = true;
+    startRecognition();
+  } else {
+    sticky = false;
+    stopRecognition();
+  }
+});
 
       micBtn.addEventListener('click', () => {
         recognizing ? stopRecognition() : startRecognition();
