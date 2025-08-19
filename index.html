@@ -261,20 +261,35 @@
       container.insertBefore(wrap, input);
       wrap.appendChild(input);
 
-      // Lag mic-knapp (SVG som i ChatGPT-stil)
-      const micBtn = document.createElement('button');
-      micBtn.id = 'micBtn';
-      micBtn.type = 'button';
-      micBtn.title = 'Snakk';
-      micBtn.setAttribute('aria-label','Snakk');
-      micBtn.innerHTML = `
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"></path>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-          <path d="M12 19v3"></path>
-        </svg>
-      `;
-      wrap.appendChild(micBtn);
+     // Lag mic-knapp (SVG som i ChatGPT-stil) – justert plassering
+const micBtn = document.createElement('button');
+micBtn.id = 'micBtn';
+micBtn.type = 'button';
+micBtn.title = 'Snakk';
+micBtn.setAttribute('aria-label','Snakk');
+micBtn.style.position = "absolute";
+micBtn.style.right = "8px";
+micBtn.style.top = "50%";
+micBtn.style.transform = "translateY(-50%)";  // sikrer midtstilling
+micBtn.style.width = "32px";
+micBtn.style.height = "32px";
+micBtn.style.borderRadius = "9999px";
+micBtn.style.border = "1px solid #e5e7eb";
+micBtn.style.background = "#f3f4f6";
+micBtn.style.display = "inline-flex";
+micBtn.style.alignItems = "center";
+micBtn.style.justifyContent = "center";
+micBtn.style.padding = "0";
+micBtn.style.cursor = "pointer";
+
+micBtn.innerHTML = `
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"></path>
+    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+    <path d="M12 19v3"></path>
+  </svg>
+`;
+wrap.appendChild(micBtn);
 
       if (!SpeechRecognition) {
         micBtn.addEventListener('click', () => {
