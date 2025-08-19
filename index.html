@@ -291,7 +291,7 @@ micBtn.innerHTML = `
 `;
 wrap.appendChild(micBtn);
 
-      if (!SpeechRecognition) {
+        if (!SpeechRecognition) {
         micBtn.addEventListener('click', () => {
           alert('Diktering støttes ikke i denne nettleseren. Prøv Chrome eller Edge.');
         });
