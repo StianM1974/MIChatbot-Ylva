@@ -20,9 +20,14 @@
       background-color: #f9f9f9;
       margin-bottom: 10px;
     }
-    .user { color: blue; margin: 10px 0; }
-    .bot  { color: green; margin: 10px 0; }
-
+    .user {
+      color: blue;
+      margin: 10px 0;
+    }
+    .bot {
+      color: green;
+      margin: 10px 0;
+    }
     #avatar {
       float: left;
       margin-right: 15px;
@@ -30,13 +35,18 @@
       width: 80px;
       height: 80px;
     }
-    #instructions { overflow: hidden; margin-bottom: 20px; }
-
+    #instructions {
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
     #inputContainer {
       position: fixed;
-      bottom: 0; left: 0; right: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
       margin: 0 auto;
-      width: 100%; max-width: 800px;
+      width: 100%;
+      max-width: 800px;
       background: white;
       padding: 10px;
       display: flex;
@@ -46,64 +56,80 @@
       box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
       z-index: 100;
     }
-
     #userInput {
       flex: 1;
       padding: 10px;
       min-width: 200px;
       margin-right: 5px;
     }
-
     button {
       padding: 10px;
       margin: 5px;
     }
 
-    /* --- Mikrofonknapp (ChatGPT-lignende) --- */
+    /* --- MIK-IKON: stiler legges til uten å endre eksisterende layout --- */
+    .inputWrap {
+      position: relative;
+      flex: 1 1 auto;            /* samme fleks som #userInput hadde */
+      min-width: 200px;
+      margin-right: 5px;          /* beholder avstanden før knapper */
+      display: flex;
+    }
+    .inputWrap > #userInput {
+      flex: 1 1 auto;
+      width: 100%;
+      padding-right: 44px;        /* plass til mic-knappen inni feltet */
+      margin-right: 0;            /* flyttet til wrapper */
+    }
     #micBtn {
-      display: none;               /* vises via JS (ikke på iOS/Safari) */
-      width: 36px;
-      height: 36px;
-      padding: 0;
-      margin: 5px;                 /* samme margin som de andre knappene */
+      position: absolute;
+      right: 8px; top: 50%;
+      transform: translateY(-50%);
+      width: 32px; height: 32px;
+      border-radius: 9999px;
       border: 1px solid #e5e7eb;
       background: #f3f4f6;
-      border-radius: 9999px;
-      cursor: pointer;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      inline-size: 36px;           /* sikre lik oppførsel */
-      line-height: 0;
-      display: inline-flex;        /* blir av/på via JS, men beholder layout-likhet */
+      padding: 0;
+      cursor: pointer;
       transition: background .15s ease, border-color .15s ease, box-shadow .2s ease, transform .05s ease;
     }
     #micBtn:hover { background: #eef0f3; }
-    #micBtn:active { transform: scale(0.98); }
+    #micBtn:active { transform: translateY(-50%) scale(0.98); }
 
     #micBtn svg {
-      width: 18px;
-      height: 18px;
+      width: 16px; height: 16px;
       display: block;
-      stroke: #111827;
+      stroke: #111827;            /* mørk grå */
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
-    /* Ripple (subtil puls ved trykk) */
-    .mic-ripple {
-      animation: micpulse 650ms ease-out forwards;
-      box-shadow: 0 0 0 0 rgba(17,24,39,0.20);
+    /* Puls/ripple når opptak pågår */
+    #micBtn.recording {
+      background: #fee2e2;        /* lys rød */
+      border-color: #fecaca;
+      box-shadow: 0 0 0 0 rgba(239,68,68,0.50);
+      animation: micpulse 1.5s ease-out infinite;
     }
+    #micBtn.recording svg { stroke: #b91c1c; } /* mørkere rød under opptak */
+
     @keyframes micpulse {
-      0%   { box-shadow: 0 0 0 0 rgba(17,24,39,0.20); }
-      70%  { box-shadow: 0 0 0 10px rgba(17,24,39,0.00); }
-      100% { box-shadow: 0 0 0 0 rgba(17,24,39,0.00); }
+      0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.50); }
+      70%  { box-shadow: 0 0 0 10px rgba(239,68,68,0.0); }
+      100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.0); }
     }
-    /* --- /Mikrofonknapp --- */
+    /* --- /MIK-IKON --- */
   </style>
 </head>
 <body>
   <h1>MI-chatbot – Case: Ylva</h1>
   <div id="instructions">
-    <img id="avatar" src="/ylva.png" alt="Ylva avatar">
+   <img id="avatar" src="/ylva.png" alt="Ylva avatar">
     <p><strong>Ylva (17)</strong> falt ut av videregående etter å ha hatt kyssesyken. Hun ble hengende etter faglig og trakk seg unna sosialt, men hun har hatt gode karakterer tidligere og er motivert for å komme tilbake. Hun er usikker på hvordan hun kan finne balansen mellom ambisjoner og å ikke presse seg for hardt etter utmattelsen.</p>
     <p><strong>Mål:</strong> Bygg relasjon og utforsk både bekymringer, styrker og ideer for fremtiden. Ikke press, men hjelp henne å reflektere rundt balanse og motivasjon.</p>
     <p><strong>MI-kurs:</strong> Arbeidspsykolog Stian Midtgård arrangerer MI-kurs hvor du vil møte Ylva og andre AI-bots.<br>
@@ -116,19 +142,12 @@
 
   <div id="inputContainer">
     <input type="text" id="userInput" placeholder="Skriv noe til Ylva...">
-    <!-- Mikrofonknapp (statisk, med ripple). Ikke på iOS/Safari -->
-    <button id="micBtn" title="Mikrofon" aria-label="Mikrofon">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/>
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-        <path d="M12 19v3"/>
-      </svg>
-    </button>
     <button onclick="sendMessage()">Send</button>
     <button onclick="getFeedback()">Få evaluering (tar 5 sek)</button>
   </div>
 
   <script>
+     
     const chat = document.getElementById("chat");
     const userInput = document.getElementById("userInput");
     const feedbackButton = document.querySelector("#inputContainer button:last-of-type");
@@ -153,7 +172,9 @@
       try {
         const response = await fetch("/api/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify({ conversation })
         });
 
@@ -175,7 +196,9 @@
       try {
         const response = await fetch("/api/feedback", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify({ conversation: conversation })
         });
 
@@ -212,32 +235,95 @@
     window.addEventListener("orientationchange", resizeChat);
     window.addEventListener("load", resizeChat);
 
-    /* ==== Kun VISUELT mic-ikon (ikke opptak): skjul på iOS/Safari + ripple ==== */
-    (function setupStaticMic() {
-      const micBtn = document.getElementById("micBtn");
-      if (!micBtn) return;
+    // === Mic-ikon (kun ikke-iOS/Safari). Minimalt inngrep i DOM/layout ===
+    (function addMicIfSupported() {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      if (isIOS || isSafari) return; // ikke vis mic her
 
-      const ua = navigator.userAgent;
-      const isIOS = /iPad|iPhone|iPod/.test(ua);
-      const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-      // Skjul på iOS/Safari, vis ellers
-      if (isIOS || isSafari) {
-        micBtn.style.display = "none";
-      } else {
-        micBtn.style.display = "inline-flex";
+      // Pakk inn input i en wrapper, uten å endre flex-oppsett
+      const input = document.getElementById('userInput');
+      const container = document.getElementById('inputContainer');
+
+      // Lag wrapper foran input, ta over flex:1-plassen
+      const wrap = document.createElement('div');
+      wrap.className = 'inputWrap';
+      container.insertBefore(wrap, input);   // plasseres der input sto
+      wrap.appendChild(input);               // flytt input inn i wrapper
+
+      // Lag mic-knapp (SVG som i ChatGPT-stil)
+      const micBtn = document.createElement('button');
+      micBtn.id = 'micBtn';
+      micBtn.type = 'button';
+      micBtn.title = 'Snakk';
+      micBtn.setAttribute('aria-label','Snakk');
+      micBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <path d="M12 19v3"></path>
+        </svg>
+      `;
+      wrap.appendChild(micBtn);
+
+      // Hvis nettleseren ikke støtter Web Speech, vis info ved klikk.
+      if (!SpeechRecognition) {
+        micBtn.addEventListener('click', () => {
+          alert('Diktering støttes ikke i denne nettleseren. Prøv Chrome eller Edge.');
+        });
+        return;
       }
 
-      // Ripple-effekt ved klikk (kun visuelt)
-      micBtn.addEventListener("click", () => {
-        micBtn.classList.remove("mic-ripple"); // restart animasjon hvis spam-trykk
-        // tving reflow for å restarte animasjonen
-        void micBtn.offsetWidth;
-        micBtn.classList.add("mic-ripple");
-        // automatisk fjern klassen etter animasjonen
-        setTimeout(() => micBtn.classList.remove("mic-ripple"), 700);
+      // Web Speech API: enkel start/stop + ripple
+      let recognizing = false;
+      let recognition;
+
+      const startRecognition = () => {
+        if (recognizing) return;
+        recognition = new SpeechRecognition();
+        recognition.lang = "no-NO";
+        recognition.interimResults = true;
+        recognition.continuous = false; // stopper ved pause/stillhet
+
+        let finalText = "";
+        recognizing = true;
+        micBtn.classList.add('recording');
+        micBtn.setAttribute('aria-label','Lytter…');
+
+        recognition.onresult = (e) => {
+          let interim = "";
+          for (let i = e.resultIndex; i < e.results.length; ++i) {
+            const t = e.results[i][0].transcript;
+            if (e.results[i].isFinal) finalText += t;
+            else interim += t;
+          }
+          // Vis alltid tekst i input – bruker kan redigere før sending
+          input.value = (finalText + " " + interim).trim();
+        };
+
+        const stopUI = () => {
+          recognizing = false;
+          micBtn.classList.remove('recording');
+          micBtn.setAttribute('aria-label','Snakk');
+        };
+
+        recognition.onerror = stopUI;
+        recognition.onend = stopUI;
+
+        recognition.start();
+      };
+
+      const stopRecognition = () => {
+        try { recognition && recognition.stop(); } catch {}
+      };
+
+      micBtn.addEventListener('click', () => {
+        recognizing ? stopRecognition() : startRecognition();
       });
     })();
+    // === /Mic-ikon ===
   </script>
 </body>
 </html>
