@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta charset="UTF-8">
   <title>MI-chatbot – Ylva</title>
   <style>
@@ -14,17 +14,20 @@
     #chat {
       border: 1px solid #ccc;
       padding: 20px;
-      /* padding-bottom oppdateres i JS basert på inputContainer og tastatur */
       padding-bottom: 100px;
       height: calc(100vh - 450px);
       overflow-y: auto;
       background-color: #f9f9f9;
       margin-bottom: 10px;
-      -webkit-overflow-scrolling: touch;
     }
-    .user { color: blue; margin: 10px 0; }
-    .bot  { color: green; margin: 10px 0; }
-
+    .user {
+      color: blue;
+      margin: 10px 0;
+    }
+    .bot {
+      color: green;
+      margin: 10px 0;
+    }
     #avatar {
       float: left;
       margin-right: 15px;
@@ -32,225 +35,73 @@
       width: 80px;
       height: 80px;
     }
-    #instructions { overflow: hidden; margin-bottom: 20px; }
-
-    /* ====== INPUTRADEN (mobil først) ====== */
+    #instructions {
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
     #inputContainer {
       position: fixed;
-      left: 0; right: 0; bottom: 0;           /* <-- bottom justeres i JS */
+      bottom: 0;
+      left: 0;
+      right: 0;
       margin: 0 auto;
-      width: 100%; max-width: 800px;
-      background: white;
-      padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
-      display: flex;
-      flex-wrap: wrap;             /* mobil: to rader */
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
-      z-index: 100;
-      box-sizing: border-box;
-    }
-
-    /* Øverste rad (mobil): input + send */
-    .inputRow {
-      display: flex;
-      align-items: center;
-      gap: 8px;
       width: 100%;
-    }
-    .inputWrap {
-      position: relative;
-      flex: 1 1 auto;
-      min-width: 0;
+      max-width: 800px;
+      background: white;
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
+      z-index: 100;
     }
     #userInput {
-      width: 100%;
-      padding: 12px 42px 12px 12px; /* plass til mic */
-      box-sizing: border-box;
-      font-size: 16px;
-      min-height: 42px;
+      flex: 1;
+      padding: 10px;
+      min-width: 200px;
+      margin-right: 5px;
     }
-
-    /* Mikrofon-knapp (SVG), ChatGPT-lignende */
-    #micBtn{
-      position: absolute;
-      right: 6px; top: 50%;
-      transform: translateY(-50%);
-      border: 1px solid #e5e7eb;
-      background: #f3f4f6;
-      cursor: pointer;
-      padding: 6px;
-      width: 32px;
-      height: 32px;
-      border-radius: 9999px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: background .15s ease, border-color .15s ease, box-shadow .2s ease, transform .05s ease;
-    }
-    #micBtn:hover{ background: #eef0f3; }
-    #micBtn:active{ transform: translateY(-50%) scale(0.98); }
-
-    /* SVG-ikonet */
-    #micBtn svg {
-      width: 16px;
-      height: 16px;
-      display: block;
-      stroke: #111827; /* mørk grå */
-    }
-
-    /* Opptak: rød bakgrunn + subtil puls (ripple) */
-    #micBtn.recording {
-      background: #fee2e2;        /* lys rød */
-      border-color: #fecaca;
-      box-shadow: 0 0 0 0 rgba(239,68,68,0.50);
-      animation: micpulse 1.5s ease-out infinite;
-    }
-    #micBtn.recording svg { stroke: #b91c1c; } /* mørkere rød ikonlinje */
-
-    @keyframes micpulse {
-      0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.50); }
-      70%  { box-shadow: 0 0 0 10px rgba(239,68,68,0.0); }
-      100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.0); }
-    }
-
-    .btn-send {
-      flex: 0 0 auto;
-      white-space: nowrap;
-      padding: 10px 12px;
-      font-size: 14px;
-    }
-
-    /* Egen rad under (mobil): midtstilt evaluering */
-    .feedbackRow {
-      width: 100%;
-      display: flex;
-      justify-content: center;     /* mobil: midtstilt */
-    }
-    .btn-feedback {
-      padding: 10px 12px;
-      font-size: 14px;             /* lik som Send */
-      white-space: nowrap;
-    }
-
-    /* Små skjermer: kort placeholder (valgfritt hint) */
-    @media (max-width: 420px){
-      #userInput::placeholder { content: "Skriv…"; }
-    }
-
-    /* ====== Desktop / store skjermer ====== */
-    @media (min-width: 700px){
-      #inputContainer {
-        flex-wrap: nowrap;         /* én rad */
-      }
-      .inputRow {
-        width: auto;
-        flex: 1 1 auto;            /* tar tilgjengelig plass */
-      }
-      .feedbackRow {
-        width: auto;
-        justify-content: flex-start; /* ikke midtstilt på desktop */
-      }
+    button {
+      padding: 10px;
+      margin: 5px;
     }
   </style>
 </head>
 <body>
   <h1>MI-chatbot – Case: Ylva</h1>
   <div id="instructions">
-    <img id="avatar" src="/ylva.png" alt="Ylva avatar">
+   <img id="avatar" src="/ylva.png" alt="Ylva avatar">
     <p><strong>Ylva (17)</strong> falt ut av videregående etter å ha hatt kyssesyken. Hun ble hengende etter faglig og trakk seg unna sosialt, men hun har hatt gode karakterer tidligere og er motivert for å komme tilbake. Hun er usikker på hvordan hun kan finne balansen mellom ambisjoner og å ikke presse seg for hardt etter utmattelsen.</p>
     <p><strong>Mål:</strong> Bygg relasjon og utforsk både bekymringer, styrker og ideer for fremtiden. Ikke press, men hjelp henne å reflektere rundt balanse og motivasjon.</p>
     <p><strong>MI-kurs:</strong> Arbeidspsykolog Stian Midtgård arrangerer MI-kurs hvor du vil møte Ylva og andre AI-bots.<br>
-      <a href="https://www.arbeidspsykolog.no/webinar/" target="_blank">Les mer og meld deg på</a><br>
-      <a href="https://mailchi.mp/arbeidspsykolog.no/f-oppdateringer-om-mi-bots-og-kurs" target="_blank">Registrer deg for nye AI-bots og nyheter</a></p>
+    <a href="https://www.arbeidspsykolog.no/webinar/" target="_blank">Les mer og meld deg på</a><br>
+    <a href="https://mailchi.mp/arbeidspsykolog.no/f-oppdateringer-om-mi-bots-og-kurs" target="_blank">Registrer deg for nye AI-bots og nyheter</a></p>
     <p style="font-size: 0.9em;">Dette er en Beta-versjon – send gjerne kopi av samtalen om dere oppdager "bugs" til <a href="mailto:stian@arbeidspsykolog.no">stian@arbeidspsykolog.no</a></p>
   </div>
 
   <div id="chat"></div>
 
-  <!-- Input: mobil = to rader, desktop = én rad -->
   <div id="inputContainer">
-    <div class="inputRow">
-      <div class="inputWrap">
-        <input type="text" id="userInput" placeholder="Skriv noe til Ylva...">
-        <!-- SVG-mikrofon (ChatGPT-lignende) -->
-        <button id="micBtn" title="Snakk" aria-label="Snakk">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <!-- mikrofon-kapsel -->
-            <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/>
-            <!-- stett -->
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <!-- fot -->
-            <path d="M12 19v3"/>
-          </svg>
-        </button>
-      </div>
-      <button class="btn-send" onclick="sendMessage()">Send</button>
-    </div>
-
-    <div class="feedbackRow">
-      <button class="btn-feedback" onclick="getFeedback()">Få evaluering (tar 5 sek)</button>
-    </div>
+    <input type="text" id="userInput" placeholder="Skriv noe til Ylva...">
+    <button onclick="sendMessage()">Send</button>
+    <button onclick="getFeedback()">Få evaluering (tar 5 sek)</button>
   </div>
 
   <script>
+     
     const chat = document.getElementById("chat");
     const userInput = document.getElementById("userInput");
-    const inputBar = document.getElementById("inputContainer");
-    const feedbackButton = document.querySelector(".btn-feedback");
+    const feedbackButton = document.querySelector("#inputContainer button:last-of-type");
     let conversation = [];
 
-    const conversationId = `${new Date().toISOString().replace(/[:.]/g, "-")}_${Math.random().toString(36).slice(2,7)}`;
-    const chatbotVersion = "Ylva_v1.0";
+     const conversationId = `${new Date().toISOString().replace(/[:.]/g, "-")}_${Math.random().toString(36).slice(2,7)}`;
+  const chatbotVersion = "Ylva_v1.0";
 
-    /* ========= 1) Keyboard-aware layout (bottom-offset) ========= */
-    function getKeyboardHeight() {
-      const vv = window.visualViewport;
-      if (!vv) return 0;
-      // Høyde tastatur ≈ full vindushøyde - (synlig viewport + offsetTop)
-      return Math.max(0, window.innerHeight - (vv.height + vv.offsetTop));
-    }
-
-    function applyLayout() {
-      const kb = getKeyboardHeight();
-
-      // Løft inputbaren nøyaktig over tastaturet
-      inputBar.style.bottom = kb + 'px';
-
-      // Oppdater chat padding-bottom så siste meldinger ikke havner bak input
-      const inputH = inputBar.getBoundingClientRect().height;
-      chat.style.paddingBottom = (inputH + kb + 12) + 'px';
-
-      // Sett chat-høyde til synlig viewport-høyde minus inputbar
-      const visibleH = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-      const chatH = Math.max(160, visibleH - inputH - 16);
-      chat.style.height = chatH + 'px';
-    }
-
-    /* ========= 2) Smart autoscroll: vis siste melding over input ========= */
-    function smartScroll(force = false) {
-      applyLayout();
-      const nearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 120;
-      if (force || nearBottom) {
-        chat.scrollTop = chat.scrollHeight;
-      }
-    }
-
-    // Reager på tastatur/viewport-endringer
-    window.visualViewport?.addEventListener('resize', () => smartScroll(false));
-    window.visualViewport?.addEventListener('scroll', () => smartScroll(false));
-    window.addEventListener('orientationchange', () => smartScroll(false));
-    window.addEventListener('load', () => smartScroll(true));
-    window.addEventListener('resize', () => smartScroll(false));
-
-    // Hold input + siste melding synlige ved fokus
-    userInput.addEventListener('focus', () => {
-      setTimeout(() => smartScroll(true), 50);
-    });
-
-    /* ========= 3) Chat-flyt ========= */
     userInput.addEventListener("keypress", function(event) {
-      if (event.key === "Enter") sendMessage();
+      if (event.key === "Enter") {
+        sendMessage();
+      }
     });
 
     async function sendMessage() {
@@ -263,7 +114,9 @@
       try {
         const response = await fetch("/api/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify({ conversation })
         });
 
@@ -274,21 +127,21 @@
       } catch (error) {
         appendMessage("System", "En feil oppstod i samtalen.", "bot");
         console.error("Feil fra API:", error);
-      } finally {
-        smartScroll(true);
       }
     }
 
     async function getFeedback() {
       const originalText = feedbackButton.innerText;
-      feedbackButton.innerText = "Vurderer …";
+      feedbackButton.innerText = "Vurderer samtalen …";
       feedbackButton.disabled = true;
 
       try {
         const response = await fetch("/api/feedback", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ conversation })
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ conversation: conversation })
         });
 
         const data = await response.json();
@@ -300,7 +153,6 @@
       } finally {
         feedbackButton.innerText = originalText;
         feedbackButton.disabled = false;
-        smartScroll(true);
       }
     }
 
@@ -309,87 +161,21 @@
       message.className = cssClass;
       message.innerHTML = `<strong>${sender}:</strong> ${text}`;
       chat.appendChild(message);
-      smartScroll(true);
+      requestAnimationFrame(() => {
+        chat.scrollTop = chat.scrollHeight;
+      });
     }
 
-    /* ========= 4) Mikrofon-ikon: Web Speech API (Chrome/Edge/Android) + iOS-hint ========= */
-    (function setupVoiceUI() {
-      const micBtn = document.getElementById("micBtn");
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const resizeChat = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+      const chatBox = document.getElementById("chat");
+      chatBox.style.height = `calc(var(--vh, 1vh) * 100 - 450px)`;
+    };
 
-      // 1) iOS / Safari: bruk tastaturets innebygde diktering
-      if (isIOS || isSafari) {
-        micBtn.style.display = "inline-flex";
-        micBtn.addEventListener("click", () => {
-          alert("På iPhone/Safari: bruk mikrofon-ikonet på tastaturet for diktering.");
-        });
-        return;
-      }
-
-      // 2) Chrome/Edge/Android: Web Speech API
-      if (SpeechRecognition) {
-        micBtn.style.display = "inline-flex";
-        let recognizing = false;
-        let recognition;
-
-        const startRecognition = () => {
-          if (recognizing) return;
-          recognition = new SpeechRecognition();
-          recognition.lang = "no-NO";
-          recognition.interimResults = true;
-          recognition.continuous = false; // stopper på stillhet
-
-          let finalText = "";
-          micBtn.classList.add("recording");
-          micBtn.setAttribute("aria-label", "Lytter…");
-
-          recognition.onresult = (e) => {
-            let interim = "";
-            for (let i = e.resultIndex; i < e.results.length; ++i) {
-              const t = e.results[i][0].transcript;
-              if (e.results[i].isFinal) finalText += t;
-              else interim += t;
-            }
-            userInput.value = (finalText + " " + interim).trim();
-          };
-
-          recognition.onerror = () => {
-            micBtn.classList.remove("recording");
-            micBtn.setAttribute("aria-label", "Snakk");
-            recognizing = false;
-          };
-
-          recognition.onend = () => {
-            micBtn.classList.remove("recording");
-            micBtn.setAttribute("aria-label", "Snakk");
-            recognizing = false;
-          };
-
-          recognizing = true;
-          recognition.start();
-        };
-
-        const stopRecognition = () => {
-          try { recognition && recognition.stop(); } catch {}
-        };
-
-        micBtn.addEventListener("click", () => {
-          recognizing ? stopRecognition() : startRecognition();
-        });
-        return;
-      }
-
-      // 3) Fallback: ingen støtte
-      micBtn.style.display = "inline-flex";
-      micBtn.addEventListener("click", () => {
-        alert("Nettleseren støtter ikke diktering. Bruk Chrome eller Safari sitt tastatur.");
-      });
-    })();
-
-    // initial layout
-    smartScroll(true);
+    window.addEventListener("resize", resizeChat);
+    window.addEventListener("orientationchange", resizeChat);
+    window.addEventListener("load", resizeChat);
   </script>
 </body>
 </html>
