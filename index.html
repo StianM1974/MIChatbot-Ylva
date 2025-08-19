@@ -291,14 +291,14 @@ micBtn.innerHTML = `
 `;
 wrap.appendChild(micBtn);
 
-        if (!SpeechRecognition) {
-        micBtn.addEventListener('click', () => {
-          alert('Diktering støttes ikke i denne nettleseren. Prøv Chrome eller Edge.');
-        });
-        return;
-      }
+if (!SpeechRecognition) {
+  micBtn.addEventListener('click', () => {
+    alert('Diktering støttes ikke i denne nettleseren. Prøv Chrome eller Edge.');
+  });
+  return;
+}
 
-      // Sticky, pause-tolerant dictation for Chrome/Edge
+// Sticky, pause-tolerant dictation for Chrome/Edge
 let recognizing = false;
 let userStopped = false;   // user explicitly toggled off
 let sticky = false;        // mic stays "on" until clicked again
@@ -306,6 +306,14 @@ let recognition;
 let baseText = "";         // accumulate final results
 
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+// Gjør tilgjengelig for resten av appen (valgfritt kall fra sendMessage)
+window.micReset = function () { baseText = ""; };
+
+// Nullstill også hvis feltet blir tømt (f.eks. etter Send)
+input.addEventListener('input', () => {
+  if (input.value.trim() === "") baseText = "";
+});
 
 function startRecognition() {
   if (recognizing) return;
@@ -369,7 +377,7 @@ function stopRecognition() {
   try { recognition && recognition.stop(); } catch {}
 }
 
-// Toggle sticky on click
+// Toggle sticky on click (én lytter)
 micBtn.addEventListener('click', () => {
   if (!sticky) {
     sticky = true;
@@ -379,10 +387,6 @@ micBtn.addEventListener('click', () => {
     stopRecognition();
   }
 });
-
-      micBtn.addEventListener('click', () => {
-        recognizing ? stopRecognition() : startRecognition();
-      });
     })();
     // === /Mic-ikon ===
   </script>
