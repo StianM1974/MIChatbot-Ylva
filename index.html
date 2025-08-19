@@ -3,7 +3,7 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta charset="UTF-8">
-  <title>MI-chatbot – Ylva</title>
+ a <title>MI-chatbot – Ylva</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -70,16 +70,16 @@
     /* --- MIK-IKON: stiler legges til uten å endre eksisterende layout --- */
     .inputWrap {
       position: relative;
-      flex: 1 1 auto;            /* samme fleks som #userInput hadde */
+      flex: 1 1 auto;
       min-width: 200px;
-      margin-right: 5px;          /* beholder avstanden før knapper */
+      margin-right: 5px;
       display: flex;
     }
     .inputWrap > #userInput {
       flex: 1 1 auto;
       width: 100%;
-      padding-right: 44px;        /* plass til mic-knappen inni feltet */
-      margin-right: 0;            /* flyttet til wrapper */
+      padding-right: 44px;
+      margin-right: 0;
     }
     #micBtn {
       position: absolute;
@@ -102,21 +102,20 @@
     #micBtn svg {
       width: 16px; height: 16px;
       display: block;
-      stroke: #111827;            /* mørk grå */
+      stroke: #111827;
       fill: none;
       stroke-width: 2;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
 
-    /* Puls/ripple når opptak pågår */
     #micBtn.recording {
-      background: #fee2e2;        /* lys rød */
+      background: #fee2e2;
       border-color: #fecaca;
       box-shadow: 0 0 0 0 rgba(239,68,68,0.50);
       animation: micpulse 1.5s ease-out infinite;
     }
-    #micBtn.recording svg { stroke: #b91c1c; } /* mørkere rød under opptak */
+    #micBtn.recording svg { stroke: #b91c1c; }
 
     @keyframes micpulse {
       0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.50); }
@@ -147,7 +146,6 @@
   </div>
 
   <script>
-     
     const chat = document.getElementById("chat");
     const userInput = document.getElementById("userInput");
     const feedbackButton = document.querySelector("#inputContainer button:last-of-type");
@@ -155,6 +153,17 @@
 
     const conversationId = `${new Date().toISOString().replace(/[:.]/g, "-")}_${Math.random().toString(36).slice(2,7)}`;
     const chatbotVersion = "Ylva_v1.0";
+
+    // --- NYTT: mer robust autoscroll (Chrome) ---
+    function scrollToBottom() {
+      requestAnimationFrame(() => {
+        chat.scrollTop = chat.scrollHeight;
+        requestAnimationFrame(() => {
+          chat.scrollTop = chat.scrollHeight;
+        });
+      });
+    }
+    // --- /NYTT ---
 
     userInput.addEventListener("keypress", function(event) {
       if (event.key === "Enter") {
@@ -219,9 +228,8 @@
       message.className = cssClass;
       message.innerHTML = `<strong>${sender}:</strong> ${text}`;
       chat.appendChild(message);
-      requestAnimationFrame(() => {
-        chat.scrollTop = chat.scrollHeight;
-      });
+      // Endret: bruk mer robust autoscroll
+      scrollToBottom();
     }
 
     const resizeChat = () => {
@@ -250,8 +258,8 @@
       // Lag wrapper foran input, ta over flex:1-plassen
       const wrap = document.createElement('div');
       wrap.className = 'inputWrap';
-      container.insertBefore(wrap, input);   // plasseres der input sto
-      wrap.appendChild(input);               // flytt input inn i wrapper
+      container.insertBefore(wrap, input);
+      wrap.appendChild(input);
 
       // Lag mic-knapp (SVG som i ChatGPT-stil)
       const micBtn = document.createElement('button');
@@ -268,7 +276,6 @@
       `;
       wrap.appendChild(micBtn);
 
-      // Hvis nettleseren ikke støtter Web Speech, vis info ved klikk.
       if (!SpeechRecognition) {
         micBtn.addEventListener('click', () => {
           alert('Diktering støttes ikke i denne nettleseren. Prøv Chrome eller Edge.');
@@ -276,7 +283,6 @@
         return;
       }
 
-      // Web Speech API: enkel start/stop + ripple
       let recognizing = false;
       let recognition;
 
@@ -285,7 +291,7 @@
         recognition = new SpeechRecognition();
         recognition.lang = "no-NO";
         recognition.interimResults = true;
-        recognition.continuous = false; // stopper ved pause/stillhet
+        recognition.continuous = false;
 
         let finalText = "";
         recognizing = true;
@@ -299,7 +305,6 @@
             if (e.results[i].isFinal) finalText += t;
             else interim += t;
           }
-          // Vis alltid tekst i input – bruker kan redigere før sending
           input.value = (finalText + " " + interim).trim();
         };
 
